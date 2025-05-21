@@ -560,6 +560,34 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for oauth2proxy.
+*/}}
+{{- define "lagoon-core.oauth2proxy.fullname" -}}
+{{- include "lagoon-core.fullname" . }}-oauth2proxy
+{{- end }}
+
+{{/*
+Common labels oauth2-proxy.
+*/}}
+{{- define "lagoon-core.oauth2proxy.labels" -}}
+helm.sh/chart: {{ include "lagoon-core.chart" . }}
+{{ include "lagoon-core.oauth2proxy.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels oauth2-proxy.
+*/}}
+{{- define "lagoon-core.oauth2proxy.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "lagoon-core.name" . }}
+app.kubernetes.io/component: {{ include "lagoon-core.oauth2proxy.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for ssh.
 */}}
 {{- define "lagoon-core.ssh.fullname" -}}
