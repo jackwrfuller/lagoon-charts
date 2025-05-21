@@ -49,6 +49,14 @@ spec:
           {{- else }}
           value: http://{{ include "lagoon-core.keycloak.fullname" . }}:{{ .Values.keycloak.service.port }}/auth
           {{- end }}
+        - name: OAUTH2_PROXY_FRONTEND_URL
+          {{- if .Values.oauth2proxyFrontEndURL }}
+          value: {{ .Values.oauth2proxyFrontEndURL }}
+          {{- else if .Values.oauth2proxy.ingress.enabled }}
+          value: {{ index .Values.oauth2proxy.ingress.hosts 0 "host" }}
+          {{- else }}
+          value: http://{{ include "lagoon-core.oauth2proxy.fullname" . }}:{{ .Values.oauth2proxy.service.port }}
+          {{- end }}
         {{- with .Values.keycloakAdminEmail }}
         - name: KEYCLOAK_ADMIN_EMAIL
           value: {{ . | quote }}
@@ -74,6 +82,13 @@ spec:
         - name: KC_EVENT_METRICS_USER_ENABLED
           value: "true"
       {{- end }}
+        - name: OAUTH2_PROXY_REDIRECT_HOST
+          value: {{ index .Values.oauth2proxy.ingress.hosts 0 "host" }}
+        - name: KEYCLOAK_LAGOON_O2P_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.keycloak.fullname" . }}
+              key: KEYCLOAK_LAGOON_O2P_CLIENT_SECRET
       {{- range $key, $val := .Values.keycloak.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}
