@@ -127,7 +127,7 @@ oauth2proxy:
     annotations: {}
       # kubernetes.io/tls-acme: "true"
     hosts:
-    - host: drush-alias.example.com
+    - host: oauth2proxy.example.com
       paths:
       - /
     tls: []
