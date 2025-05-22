@@ -104,7 +104,7 @@ imageTag: ""
 
 # the following services are part of the lagoon-core chart
 oauth2proxy:
-  enabled: false
+  enabled: true
   replicaCount: 2
   image:
     repository: uselagoon/oauth2-proxy

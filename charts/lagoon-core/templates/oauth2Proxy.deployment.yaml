@@ -38,7 +38,17 @@ spec:
         - name: {{ $key }}
           value: {{ $val | quote }}
       {{- end }}
-
+      ports:
+      - name: http-4180
+        containerPort: 4180
+      livenessProbe:
+        httpGet:
+          path: /
+          port: http-4180
+      readinessProbe:
+        httpGet:
+          path: /
+          port: http-4180
       {{- with .Values.oauth2proxy.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
