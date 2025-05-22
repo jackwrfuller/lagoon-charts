@@ -104,13 +104,13 @@ imageTag: ""
 
 # the following services are part of the lagoon-core chart
 oauth2proxy:
-  enabled: false
+  enabled: true
   replicaCount: 2
   image:
     repository: uselagoon/oauth2-proxy
     pullPolicy: Always
     # Overrides the image tag whose default is "latest".
-    tag: "v3.1.0"
+    tag: "latest"
   podAnnotations: {}
   securityContext: {}
   resources:
