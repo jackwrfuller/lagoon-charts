@@ -1,38 +1,38 @@
-{{- if .Values.oauth2-proxy.enabled -}}
+{{- if .Values.oauth2Proxy.enabled -}}
 apiVersion: apps/v1
 kind: Deployment
 metadata:
-  name: {{ include "lagoon-core.oauth2-proxy.fullname" . }}
+  name: {{ include "lagoon-core.oauth2Proxy.fullname" . }}
   labels:
-    {{- include "lagoon-core.oauth2-proxy.labels" . | nindent 4 }}
+    {{- include "lagoon-core.oauth2Proxy.labels" . | nindent 4 }}
 spec:
-{{- if not .Values.oauth2-proxy.autoscaling.enabled }}
-  replicas: {{ .Values.oauth2-proxy.replicaCount }}
+{{- if not .Values.oauth2Proxy.autoscaling.enabled }}
+  replicas: {{ .Values.oauth2Proxy.replicaCount }}
 {{- end }}
   selector:
     matchLabels:
-      {{- include "lagoon-core.oauth2-proxy.selectorLabels" . | nindent 6 }}
+      {{- include "lagoon-core.oauth2Proxy.selectorLabels" . | nindent 6 }}
   template:
     metadata:
       annotations:
-    {{- with .Values.oauth2-proxy.podAnnotations }}
+    {{- with .Values.oauth2Proxy.podAnnotations }}
         {{- toYaml . | nindent 8 }}
     {{- end }}
       labels:
-        {{- include "lagoon-core.oauth2-proxy.selectorLabels" . | nindent 8 }}
+        {{- include "lagoon-core.oauth2Proxy.selectorLabels" . | nindent 8 }}
     spec:
       {{- with .Values.imagePullSecrets }}
       imagePullSecrets:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       securityContext:
-        {{- toYaml (coalesce .Values.oauth2-proxy.podSecurityContext .Values.podSecurityContext) | nindent 8 }}
+        {{- toYaml (coalesce .Values.oauth2Proxy.podSecurityContext .Values.podSecurityContext) | nindent 8 }}
       containers:
-      - name: oauth2-proxy
+      - name: oauth2Proxy
         securityContext:
-          {{- toYaml .Values.oauth2-proxy.securityContext | nindent 10 }}
-        image: "{{ .Values.oauth2-proxy.image.repository }}:{{ coalesce .Values.oauth2-proxy.image.tag .Values.imageTag "latest" }}"
-        imagePullPolicy: {{ .Values.oauth2-proxy.image.pullPolicy }}
+          {{- toYaml .Values.oauth2Proxy.securityContext | nindent 10 }}
+        image: "{{ .Values.oauth2Proxy.image.repository }}:{{ coalesce .Values.oauth2Proxy.image.tag .Values.imageTag "latest" }}"
+        imagePullPolicy: {{ .Values.oauth2Proxy.image.pullPolicy }}
         env:
       {{- range $key, $val := .Values.backupHandler.additionalEnvs }}
         - name: {{ $key }}
@@ -50,8 +50,8 @@ spec:
             path: /aliases.drushrc.php.stub
             port: http-8080
         resources:
-          {{- toYaml .Values.oauth2-proxy.resources | nindent 10 }}
-      {{- with .Values.oauth2-proxy.nodeSelector }}
+          {{- toYaml .Values.oauth2Proxy.resources | nindent 10 }}
+      {{- with .Values.oauth2Proxy.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
@@ -69,16 +69,16 @@ spec:
                 - key: app.kubernetes.io/component
                   operator: In
                   values:
-                  - {{ include "lagoon-core.oauth2-proxy.fullname" . }}
+                  - {{ include "lagoon-core.oauth2Proxy.fullname" . }}
                 - key: app.kubernetes.io/instance
                   operator: In
                   values:
                   - {{ .Release.Name }}
               topologyKey: kubernetes.io/hostname
-      {{- with .Values.oauth2-proxy.affinity }}
+      {{- with .Values.oauth2Proxy.affinity }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
-      {{- with .Values.oauth2-proxy.tolerations }}
+      {{- with .Values.oauth2Proxy.tolerations }}
       tolerations:
         {{- toYaml . | nindent 8 }}
       {{- end }}
