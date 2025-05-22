@@ -560,6 +560,34 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
+Create a default fully qualified app name for drush-alias.
+*/}}
+{{- define "lagoon-core.oauth2Proxy.fullname" -}}
+{{- include "lagoon-core.fullname" . }}-oauth2Proxy
+{{- end }}
+
+{{/*
+Common labels oauth2-proxy.
+*/}}
+{{- define "lagoon-core.oauth2Proxy.labels" -}}
+helm.sh/chart: {{ include "lagoon-core.chart" . }}
+{{ include "lagoon-core.oauth2Proxy.selectorLabels" . }}
+{{- if .Chart.AppVersion }}
+app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
+{{- end }}
+app.kubernetes.io/managed-by: {{ .Release.Service }}
+{{- end }}
+
+{{/*
+Selector labels oauth2-proxy.
+*/}}
+{{- define "lagoon-core.oauth2Proxy.selectorLabels" -}}
+app.kubernetes.io/name: {{ include "lagoon-core.name" . }}
+app.kubernetes.io/component: {{ include "lagoon-core.oauth2Proxy.fullname" . }}
+app.kubernetes.io/instance: {{ .Release.Name }}
+{{- end }}
+
+{{/*
 Create a default fully qualified app name for ssh.
 */}}
 {{- define "lagoon-core.ssh.fullname" -}}
