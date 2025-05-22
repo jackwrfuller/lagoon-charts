@@ -103,7 +103,7 @@ imageTag: ""
 # blockDeveloperSSH: false
 
 # the following services are part of the lagoon-core chart
-oauth2-proxy:
+oauth2Proxy:
   enabled: true
   replicaCount: 2
   image:
