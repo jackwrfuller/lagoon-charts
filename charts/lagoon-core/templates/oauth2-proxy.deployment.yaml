@@ -1,0 +1,85 @@
+{{- if .Values.oauth2-proxy.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lagoon-core.oauth2-proxy.fullname" . }}
+  labels:
+    {{- include "lagoon-core.oauth2-proxy.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.oauth2-proxy.autoscaling.enabled }}
+  replicas: {{ .Values.oauth2-proxy.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "lagoon-core.oauth2-proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+    {{- with .Values.oauth2-proxy.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "lagoon-core.oauth2-proxy.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml (coalesce .Values.oauth2-proxy.podSecurityContext .Values.podSecurityContext) | nindent 8 }}
+      containers:
+      - name: oauth2-proxy
+        securityContext:
+          {{- toYaml .Values.oauth2-proxy.securityContext | nindent 10 }}
+        image: "{{ .Values.oauth2-proxy.image.repository }}:{{ coalesce .Values.oauth2-proxy.image.tag .Values.imageTag "latest" }}"
+        imagePullPolicy: {{ .Values.oauth2-proxy.image.pullPolicy }}
+        env:
+      {{- range $key, $val := .Values.backupHandler.additionalEnvs }}
+        - name: {{ $key }}
+          value: {{ $val | quote }}
+      {{- end }}
+        ports:
+        - name: http-8080
+          containerPort: 8080
+        livenessProbe:
+          httpGet:
+            path: /aliases.drushrc.php.stub
+            port: http-8080
+        readinessProbe:
+          httpGet:
+            path: /aliases.drushrc.php.stub
+            port: http-8080
+        resources:
+          {{- toYaml .Values.oauth2-proxy.resources | nindent 10 }}
+      {{- with .Values.oauth2-proxy.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+        podAntiAffinity:
+          preferredDuringSchedulingIgnoredDuringExecution:
+          - weight: 50
+            podAffinityTerm:
+              labelSelector:
+                matchExpressions:
+                - key: app.kubernetes.io/name
+                  operator: In
+                  values:
+                  - {{ include "lagoon-core.name" . }}
+                - key: app.kubernetes.io/component
+                  operator: In
+                  values:
+                  - {{ include "lagoon-core.oauth2-proxy.fullname" . }}
+                - key: app.kubernetes.io/instance
+                  operator: In
+                  values:
+                  - {{ .Release.Name }}
+              topologyKey: kubernetes.io/hostname
+      {{- with .Values.oauth2-proxy.affinity }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.oauth2-proxy.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

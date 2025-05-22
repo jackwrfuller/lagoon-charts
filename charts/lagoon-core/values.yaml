@@ -103,6 +103,43 @@ imageTag: ""
 # blockDeveloperSSH: false
 
 # the following services are part of the lagoon-core chart
+oauth2-proxy:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: uselagoon/oauth2-proxy
+    pullPolicy: Always
+    # Overrides the image tag whose default is "latest".
+    tag: "v3.1.0"
+  podAnnotations: {}
+  securityContext: {}
+  resources:
+    requests:
+      memory: "8Mi"
+      cpu: "10m"
+  additionalEnvs:
+  #   FOO: Bar
+  service:
+    type: ClusterIP
+    port: 4180
+  ingress:
+    enabled: false
+    annotations: {}
+      # kubernetes.io/tls-acme: "true"
+    hosts:
+    - host: drush-alias.example.com
+      paths:
+      - /
+    tls: []
+    #  - secretName: chart-example-tls
+    #    hosts:
+    #      - chart-example.local
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
 
 api:
   replicaCount: 2
