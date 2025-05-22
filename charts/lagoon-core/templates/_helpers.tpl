@@ -562,16 +562,16 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{/*
 Create a default fully qualified app name for drush-alias.
 */}}
-{{- define "lagoon-core.oauth2Proxy.fullname" -}}
-{{- include "lagoon-core.fullname" . }}-oauth2Proxy
+{{- define "lagoon-core.oauth2proxy.fullname" -}}
+{{- include "lagoon-core.fullname" . }}-oauth2proxy
 {{- end }}
 
 {{/*
 Common labels oauth2-proxy.
 */}}
-{{- define "lagoon-core.oauth2Proxy.labels" -}}
+{{- define "lagoon-core.oauth2proxy.labels" -}}
 helm.sh/chart: {{ include "lagoon-core.chart" . }}
-{{ include "lagoon-core.oauth2Proxy.selectorLabels" . }}
+{{ include "lagoon-core.oauth2proxy.selectorLabels" . }}
 {{- if .Chart.AppVersion }}
 app.kubernetes.io/version: {{ .Chart.AppVersion | quote }}
 {{- end }}
@@ -581,9 +581,9 @@ app.kubernetes.io/managed-by: {{ .Release.Service }}
 {{/*
 Selector labels oauth2-proxy.
 */}}
-{{- define "lagoon-core.oauth2Proxy.selectorLabels" -}}
+{{- define "lagoon-core.oauth2proxy.selectorLabels" -}}
 app.kubernetes.io/name: {{ include "lagoon-core.name" . }}
-app.kubernetes.io/component: {{ include "lagoon-core.oauth2Proxy.fullname" . }}
+app.kubernetes.io/component: {{ include "lagoon-core.oauth2proxy.fullname" . }}
 app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
