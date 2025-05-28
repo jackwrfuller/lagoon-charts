@@ -30,7 +30,7 @@ spec:
       volumes:
         - name: keycloak-ca-volume
           secret:
-            secretName: lagoon-test-secret
+            secretName: keycloak-tls
       containers:
       - name: oauth2proxy
         securityContext:
