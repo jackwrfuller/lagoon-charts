@@ -30,7 +30,7 @@ spec:
       volumes:
         - name: keycloak-ca-volume
           secret:
-            secretName: keycloak-tls
+            secretName: lagoon-test-secret
       containers:
       - name: oauth2proxy
         securityContext:
@@ -80,7 +80,7 @@ spec:
         - name: OAUTH2_PROXY_REVERSE_PROXY
           value: "true"
         - name: OAUTH2_PROXY_PROVIDER_CA_FILE
-          value: "/etc/ssl/certs/keycloak/tls.crt"
+          value: "/etc/ssl/certs/keycloak/ca.crt"
       {{- range $key, $val := .Values.oauth2proxy.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}
