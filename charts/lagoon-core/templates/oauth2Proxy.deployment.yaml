@@ -34,7 +34,46 @@ spec:
         image: "{{ .Values.oauth2proxy.image.repository }}:{{ coalesce .Values.oauth2proxy.image.tag .Values.imageTag "latest" }}"
         imagePullPolicy: {{ .Values.oauth2proxy.image.pullPolicy }}
         env:
-      {{- range $key, $val := .Values.backupHandler.additionalEnvs }}
+        - name: OAUTH2_PROXY_CLIENT_ID
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
+              key: OAUTH2_PROXY_CLIENT_ID
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
+              key: OAUTH2_PROXY_CLIENT_SECRET
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
+              key: OAUTH2_PROXY_COOKIE_SECRET
+        - name: OAUTH2_PROXY_PROVIDER
+          value: "keycloak-oidc"
+        - name: OAUTH2_PROXY_REDIRECT_URL
+          value: "https://172.18.0.240.nip.io/oauth2/callback"
+        - name: OAUTH2_PROXY_HTTP_ADDRESS
+          value: "0.0.0.0:4180"
+        - name: OAUTH2_PROXY_UPSTREAMS
+          value: "http://nginx:8080"
+        - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+          value: "https://lagoon-keycloak.172.18.0.240.nip.io/auth/realms/lagoon"
+        - name: OAUTH2_PROXY_EMAIL_DOMAINS
+          value: "*"
+        - name: OAUTH2_PROXY_COOKIE_SECURE
+          value: "false"
+        - name: OAUTH2_PROXY_SCOPE
+          value: "openid profile email"
+        - name: OAUTH2_PROXY_CODE_CHALLENGE_METHOD
+          value: "S256"
+        - name: OAUTH2_PROXY_COOKIE_CSRF_PER_REQUEST
+          value: "true"
+        - name: OAUTH2_PROXY_SKIP_PROVIDER_BUTTON
+          value: "true"
+        - name: OAUTH2_PROXY_REVERSE_PROXY
+          value: "true"
+      {{- range $key, $val := .Values.oauth2proxy.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}
       {{- end }}
@@ -50,7 +89,7 @@ spec:
             path: /
             port: http-4180
         resources:
-        {{- toYaml .Values.drushAlias.resources | nindent 10 }}
+        {{- toYaml .Values.oauth2proxy.resources | nindent 10 }}
       {{- with .Values.oauth2proxy.nodeSelector }}
       nodeSelector:
         {{- toYaml . | nindent 8 }}
