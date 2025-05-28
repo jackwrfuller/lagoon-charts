@@ -27,6 +27,10 @@ spec:
       {{- end }}
       securityContext:
         {{- toYaml (coalesce .Values.oauth2proxy.podSecurityContext .Values.podSecurityContext) | nindent 8 }}
+      volumes:
+        - name: keycloak-ca-volume
+          secret:
+            secretName: keycloak-tls
       containers:
       - name: oauth2proxy
         securityContext:
@@ -97,10 +101,6 @@ spec:
         resources:
         {{- toYaml .Values.oauth2proxy.resources | nindent 10 }}
       {{- with .Values.oauth2proxy.nodeSelector }}
-      volumes:
-        - name: keycloak-ca-volume
-          secret:
-            secretName: keycloak-tls
       nodeSelector:
         {{- toYaml . | nindent 8 }}
       {{- end }}
