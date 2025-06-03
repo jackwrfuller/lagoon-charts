@@ -130,10 +130,6 @@ oauth2proxy:
     - host: oauth2proxy.example.com
       paths:
       - /
-    tls: []
-    #  - secretName: chart-example-tls
-    #    hosts:
-    #      - chart-example.local
   autoscaling:
     enabled: false
     minReplicas: 1

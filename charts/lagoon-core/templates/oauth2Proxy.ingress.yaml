@@ -4,19 +4,28 @@ metadata:
   name: oauth2proxy
   namespace: lagoon-core
 spec:
+  ingressClassName: nginx
   rules:
   - host: lagoon-oauth2proxy.172.18.0.240.nip.io
     http:
       paths:
-      - path: /oauth2/
-        pathType: Prefix
-        backend:
+      - backend:
           service:
             name: lagoon-core-oauth2proxy
             port:
               number: 4180
+        path: /oauth2
+        pathType: Prefix
+      - backend:
+          service:
+            name: lagoon-core-oauth2proxy
+            port:
+              number: 80
+        path: /
+        pathType: Prefix
   tls:
   - hosts:
     - lagoon-keycloak.172.18.0.240.nip.io
+    - lagoon-oauth2proxy.172.18.0.240.nip.io
     secretName: keycloak-tls
 

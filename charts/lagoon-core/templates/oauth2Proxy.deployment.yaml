@@ -28,13 +28,39 @@ spec:
       securityContext:
         {{- toYaml (coalesce .Values.oauth2proxy.podSecurityContext .Values.podSecurityContext) | nindent 8 }}
       volumes:
-        - name: keycloak-ca-volume
-          secret:
-            secretName: keycloak-tls
-            items:
-              - key: ca.crt
-                path: ca.crt
+      - emptyDir: {}
+        name: nginx-cache
+      - configMap:
+          defaultMode: 420
+          name: oauth2-proxy-nginx
+        name: nginx
+      - name: keycloak-ca-volume
+        secret:
+          defaultMode: 420
+          items:
+          - key: ca.crt
+            path: ca.crt
+          secretName: keycloak-tls
       containers:
+      - image: nginx:alpine
+        imagePullPolicy: Always
+        name: nginx
+        ports:
+        - containerPort: 80
+          name: nginx
+          protocol: TCP
+        resources:
+          limits:
+            cpu: 200m
+            memory: 512Mi
+        terminationMessagePath: /dev/termination-log
+        terminationMessagePolicy: File
+        volumeMounts:
+        - mountPath: /etc/nginx/
+          name: nginx
+          readOnly: true
+        - mountPath: /var/cache/nginx
+          name: nginx-cache
       - name: oauth2proxy
         securityContext:
           {{- toYaml .Values.oauth2proxy.securityContext | nindent 10 }}
@@ -59,31 +85,31 @@ spec:
               name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
               key: OAUTH2_PROXY_COOKIE_SECRET
         - name: OAUTH2_PROXY_PROVIDER
-          value: "keycloak-oidc"
+          value: oidc
         - name: OAUTH2_PROXY_REDIRECT_URL
-          value: "https://172.18.0.240.nip.io/oauth2/callback"
+          value: https://lagoon-oauth2proxy.172.18.0.240.nip.io
         - name: OAUTH2_PROXY_HTTP_ADDRESS
-          value: "0.0.0.0:4180"
-        - name: OAUTH2_PROXY_UPSTREAMS
-          value: "http://nginx:8080"
+          value: 0.0.0.0:4180
         - name: OAUTH2_PROXY_OIDC_ISSUER_URL
-          value: "https://lagoon-keycloak.172.18.0.240.nip.io/auth/realms/lagoon"
+          value: https://lagoon-keycloak.172.18.0.240.nip.io/auth/realms/lagoon
         - name: OAUTH2_PROXY_EMAIL_DOMAINS
-          value: "*"
+          value: '*'
         - name: OAUTH2_PROXY_COOKIE_SECURE
           value: "false"
+        - name: OAUTH2_PROXY_COOKIE_DOMAINS
+          value: .nip.io
+        - name: OAUTH2_PROXY_WHITELIST_DOMAINS
+          value: .nip.io
         - name: OAUTH2_PROXY_SCOPE
-          value: "openid profile email"
+          value: openid profile email
         - name: OAUTH2_PROXY_CODE_CHALLENGE_METHOD
-          value: "S256"
-        - name: OAUTH2_PROXY_COOKIE_CSRF_PER_REQUEST
-          value: "true"
-        - name: OAUTH2_PROXY_SKIP_PROVIDER_BUTTON
-          value: "true"
+          value: S256
         - name: OAUTH2_PROXY_REVERSE_PROXY
-          value: "true"
+          value: "false"
         - name: OAUTH2_PROXY_PROVIDER_CA_FILE
-          value: "/etc/ssl/certs/keycloak-ca.crt"
+          value: /etc/ssl/certs/keycloak-ca.crt
+        - name: OAUTH2_PROXY_PING_PATH
+          value: /ping
       {{- range $key, $val := .Values.oauth2proxy.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}
@@ -94,16 +120,15 @@ spec:
             subPath: ca.crt
             readOnly: true
         ports:
-        - name: http-4180
-          containerPort: 4180
-        livenessProbe:
-          httpGet:
-            path: /
-            port: http-4180
+        - containerPort: 4180
+          name: http-4180
+          protocol: TCP
         readinessProbe:
+          failureThreshold: 3
           httpGet:
-            path: /
+            path: /ping
             port: http-4180
+            scheme: HTTP
         resources:
         {{- toYaml .Values.oauth2proxy.resources | nindent 10 }}
       {{- with .Values.oauth2proxy.nodeSelector }}
