@@ -122,14 +122,6 @@ oauth2proxy:
   service:
     type: ClusterIP
     port: 4180
-  ingress:
-    enabled: false
-    annotations: {}
-      # kubernetes.io/tls-acme: "true"
-    hosts:
-    - host: oauth2proxy.example.com
-      paths:
-      - /
   autoscaling:
     enabled: false
     minReplicas: 1
