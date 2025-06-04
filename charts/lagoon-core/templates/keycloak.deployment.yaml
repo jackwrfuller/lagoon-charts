@@ -68,6 +68,8 @@ spec:
             secretKeyRef:
               name: {{ include "lagoon-core.apiDB.fullname" . }}
               key: API_DB_PASSWORD
+        - name: OAUTH2_PROXY_REDIRECT_HOST
+          value: lagoon-oauth2proxy.{{ .Values.ingressIP }}.nip.io
       {{- range $key, $val := .Values.keycloak.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}

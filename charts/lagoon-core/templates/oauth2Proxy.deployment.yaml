@@ -69,16 +69,11 @@ spec:
         env:
         - name: OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION
           value: "true"
-        - name: OAUTH2_PROXY_CLIENT_ID
-          valueFrom:
-            secretKeyRef:
-              name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
-              key: OAUTH2_PROXY_CLIENT_ID
         - name: OAUTH2_PROXY_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
-              name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
-              key: OAUTH2_PROXY_CLIENT_SECRET
+              name: {{ include "lagoon-core.keycloak.fullname" . }}
+              key: KEYCLOAK_O2P_CLIENT_SECRET
         - name: OAUTH2_PROXY_COOKIE_SECRET
           valueFrom:
             secretKeyRef:
@@ -86,6 +81,8 @@ spec:
               key: OAUTH2_PROXY_COOKIE_SECRET
         - name: OAUTH2_PROXY_PROVIDER
           value: oidc
+        - name: OAUTH2_PROXY_CLIENT_ID 
+          value: lagoon-oauth2proxy
         - name: OAUTH2_PROXY_REDIRECT_URL
           value: https://lagoon-oauth2proxy.172.18.0.240.nip.io
         - name: OAUTH2_PROXY_HTTP_ADDRESS
