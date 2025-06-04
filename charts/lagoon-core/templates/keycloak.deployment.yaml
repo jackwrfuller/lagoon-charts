@@ -76,6 +76,11 @@ spec:
             secretKeyRef:
               name: {{ include "lagoon-core.apiDB.fullname" . }}
               key: API_DB_PASSWORD
+        - name: KEYCLOAK_LAGOON_O2P_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.keycloak.fullname" . }}
+              key: KEYCLOAK_LAGOON_O2P_CLIENT_SECRET
       {{- range $key, $val := .Values.keycloak.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}
