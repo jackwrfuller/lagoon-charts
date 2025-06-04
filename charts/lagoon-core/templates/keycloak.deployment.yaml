@@ -51,11 +51,11 @@ spec:
           {{- end }}
         - name: OAUTH2_PROXY_FRONTEND_URL
           {{- if .Values.oauth2proxyFrontEndURL }}
-          value: {{ .Values.oauth2proxyFrontEndURL }}/*
+          value: {{ .Values.oauth2proxyFrontEndURL }}
           {{- else if .Values.oauth2proxy.ingress.enabled }}
-          value: {{ index .Values.oauth2proxy.ingress.hosts 0 "host" }}/*
+          value: {{ index .Values.oauth2proxy.ingress.hosts 0 "host" }}
           {{- else }}
-          value: http://{{ include "lagoon-core.oauth2proxy.fullname" . }}:{{ .Values.oauth2proxy.service.port }}/*
+          value: http://{{ include "lagoon-core.oauth2proxy.fullname" . }}:{{ .Values.oauth2proxy.service.port }}
           {{- end }}
         {{- with .Values.keycloakAdminEmail }}
         - name: KEYCLOAK_ADMIN_EMAIL
