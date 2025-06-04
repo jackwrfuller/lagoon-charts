@@ -122,6 +122,8 @@ oauth2proxy:
   service:
     type: ClusterIP
     port: 4180
+  ingress:
+    enabled: false
   autoscaling:
     enabled: false
     minReplicas: 1
