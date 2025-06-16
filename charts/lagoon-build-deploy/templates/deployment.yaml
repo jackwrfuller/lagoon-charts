@@ -95,9 +95,6 @@ spec:
         {{- with .Values.lagoonFeatureFlagForceRootlessWorkload }}
         - "--lagoon-feature-flag-force-rootless-workload={{ . }}"
         {{- end }}
-        {{- with .Values.lagoonFeatureFlagOauth2proxyDomain }}
-        - "--lagoon-feature-flag-oauth2proxy-domain={{ . }}"
-        {{- end }}
         {{- with .Values.lagoonFeatureFlagDefaultRootlessWorkload }}
         - "--lagoon-feature-flag-default-rootless-workload={{ . }}"
         {{- end }}
@@ -245,6 +242,9 @@ spec:
           value: {{ . | quote }}
         {{- end }}
         {{- end }}
+        {{- with .Values.lagoonFeatureFlagOauth2proxyDomain }}
+        - name: LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN
+          value: {{ . | quote}}
         {{- with .Values.adminLagoonFeatureFlag.containerMemoryLimit }}
         - name: ADMIN_LAGOON_FEATURE_FLAG_CONTAINER_MEMORY_LIMIT
           value: {{ . | quote}}
