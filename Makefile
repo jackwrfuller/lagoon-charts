@@ -49,6 +49,8 @@ BUILD_DEPLOY_CONTROLLER_ROOTLESS_BUILD_PODS =
 LAGOON_FEATURE_FLAG_DEFAULT_ROOTLESS_WORKLOAD = enabled
 LAGOON_FEATURE_FLAG_DEFAULT_ISOLATION_NETWORK_POLICY = enabled
 LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO = enabled
+# If using Oauth2-proxy, set the domain 
+LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN=
 # Set to `true` to use the Calico CNI plugin instead of the default kindnet. This
 # is useful for testing network policies.
 USE_CALICO_CNI =
@@ -657,6 +659,7 @@ endif
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_ROOTLESS_WORKLOAD) ] && echo '--set lagoonFeatureFlagDefaultRootlessWorkload=$(LAGOON_FEATURE_FLAG_DEFAULT_ROOTLESS_WORKLOAD)') \
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_ISOLATION_NETWORK_POLICY) ] && echo '--set lagoonFeatureFlagDefaultIsolationNetworkPolicy=$(LAGOON_FEATURE_FLAG_DEFAULT_ISOLATION_NETWORK_POLICY)') \
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO) ] && echo '--set lagoonFeatureFlagDefaultRWX2RWO=$(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO)') \
+		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo '--set lagoonFeatureFlagOauth2proxyDomain=$(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN)') \
 		lagoon-build-deploy \
 		$$(if [ $(INSTALL_STABLE_BUILDDEPLOY) = true ]; then echo 'lagoon/lagoon-build-deploy'; else echo './charts/lagoon-build-deploy'; fi)
 ifeq ($(INSTALL_STABLE_BUILDDEPLOY),true)

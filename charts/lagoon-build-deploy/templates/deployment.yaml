@@ -95,6 +95,9 @@ spec:
         {{- with .Values.lagoonFeatureFlagForceRootlessWorkload }}
         - "--lagoon-feature-flag-force-rootless-workload={{ . }}"
         {{- end }}
+        {{- with .Values.lagoonFeatureFlagOauth2proxyDomain }}
+        - "--lagoon-feature-flag-oauth2proxy-domain={{ . }}"
+        {{- end }}
         {{- with .Values.lagoonFeatureFlagDefaultRootlessWorkload }}
         - "--lagoon-feature-flag-default-rootless-workload={{ . }}"
         {{- end }}
