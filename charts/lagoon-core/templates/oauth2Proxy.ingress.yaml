@@ -25,7 +25,6 @@ spec:
         pathType: Prefix
   tls:
   - hosts:
-    - lagoon-keycloak.172.18.0.240.nip.io
     - lagoon-oauth2proxy.172.18.0.240.nip.io
-    secretName: keycloak-tls
+    secretName: oauth2proxy-tls
 
