@@ -68,7 +68,7 @@ spec:
         imagePullPolicy: {{ .Values.oauth2proxy.image.pullPolicy }}
         env:
         - name: OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION
-          value: "true"
+          value: {{ .Values.oauth2proxy.oidcSkipIssuerVerification }}
         - name: OAUTH2_PROXY_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
@@ -81,6 +81,7 @@ spec:
               key: OAUTH2_PROXY_COOKIE_SECRET
         - name: OAUTH2_PROXY_PROVIDER
           value: oidc
+          value: {{ .Values.oauth2proxy.provider }}
         - name: OAUTH2_PROXY_CLIENT_ID 
           value: lagoon-oauth2proxy
         - name: OAUTH2_PROXY_REDIRECT_URL
@@ -133,25 +134,6 @@ spec:
         {{- toYaml . | nindent 8 }}
       {{- end }}
       affinity:
-        podAntiAffinity:
-          preferredDuringSchedulingIgnoredDuringExecution:
-          - weight: 50
-            podAffinityTerm:
-              labelSelector:
-                matchExpressions:
-                - key: app.kubernetes.io/name
-                  operator: In
-                  values:
-                  - {{ include "lagoon-core.name" . }}
-                - key: app.kubernetes.io/component
-                  operator: In
-                  values:
-                  - {{ include "lagoon-core.oauth2proxy.fullname" . }}
-                - key: app.kubernetes.io/instance
-                  operator: In
-                  values:
-                  - {{ .Release.Name }}
-              topologyKey: kubernetes.io/hostname
       {{- with .Values.oauth2proxy.affinity }}
         {{- toYaml . | nindent 8 }}
       {{- end }}
