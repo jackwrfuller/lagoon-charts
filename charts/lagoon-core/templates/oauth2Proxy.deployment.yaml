@@ -84,7 +84,6 @@ spec:
         - name: OAUTH2_PROXY_CLIENT_ID 
           value: {{ .Values.oauth2proxy.clientID }}
         - name: OAUTH2_PROXY_REDIRECT_URL
-          value: https://lagoon-oauth2proxy.172.18.0.240.nip.io
           {{- if .Values.oauth2proxyFrontEndURL }}
           value: {{ .Values.oauth2proxyFrontEndURL }}
           {{- else if .Values.oauth2proxy.ingress.enabled }}
@@ -126,7 +125,7 @@ spec:
       {{- end }}
         volumeMounts:
           - name: keycloak-ca-volume
-            mountPath: /etc/ssl/certs/keycloak-ca.crt
+            mountPath: {{ .Values.oauth2proxy.caFile}}
             subPath: ca.crt
             readOnly: true
         ports:
