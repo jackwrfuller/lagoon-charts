@@ -89,7 +89,7 @@ spec:
           value: {{ .Values.oauth2proxy.httpAddress }}
         - name: OAUTH2_PROXY_OIDC_ISSUER_URL
           {{- if .Values.keycloakFrontEndURL }}
-          value: {{ .Values.keycloakFrontEndURL }}/auth
+          value: {{ .Values.keycloakFrontEndURL }}/auth/realms/lagoon
           {{- else if .Values.keycloak.ingress.enabled }}
           value: https://{{ index .Values.keycloak.ingress.hosts 0 "host" }}/auth/realms/lagoon
           {{- else }}
