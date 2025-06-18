@@ -27,7 +27,7 @@ sshTokenEndpoint: ssh-token.example.com
 keycloakAdminEmail: admin@example.com
 
 oauth2proxy:
-  oidcSkipIssuerVerification: true
+  oidcSkipIssuerVerification: "true"
 
 api:
   replicaCount: 1
