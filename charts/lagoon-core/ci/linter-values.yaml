@@ -30,6 +30,7 @@ oauth2proxy:
   provider: oidc
   oidcSkipIssuerVerification: "true"
   clientID: lagoon-oauth2proxy
+  httpAddress: "0.0.0.0:4180"
 
 api:
   replicaCount: 1
