@@ -88,8 +88,13 @@ spec:
         - name: OAUTH2_PROXY_HTTP_ADDRESS
           value: {{ .Values.oauth2proxy.httpAddress }}
         - name: OAUTH2_PROXY_OIDC_ISSUER_URL
-          value: https://lagoon-keycloak.172.18.0.240.nip.io/auth/realms/lagoon
-
+          {{- if .Values.keycloakFrontEndURL }}
+          value: {{ .Values.keycloakFrontEndURL }}/auth
+          {{- else if .Values.keycloak.ingress.enabled }}
+          value: https://{{ index .Values.keycloak.ingress.hosts 0 "host" }}/auth/realms/lagoon
+          {{- else }}
+          value: http://{{ include "lagoon-core.keycloak.fullname" . }}:{{ .Values.keycloak.service.port }}/auth/realms/lagoon
+          {{- end }}
         - name: OAUTH2_PROXY_EMAIL_DOMAINS
           value: "{{ .Values.oauth2proxy.emailDomains }}"
         - name: OAUTH2_PROXY_COOKIE_SECURE
