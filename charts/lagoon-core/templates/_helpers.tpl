@@ -560,7 +560,7 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 {{- end }}
 
 {{/*
-Create a default fully qualified app name for drush-alias.
+Create a default fully qualified app name for oauth2proxy.
 */}}
 {{- define "lagoon-core.oauth2proxy.fullname" -}}
 {{- include "lagoon-core.fullname" . }}-oauth2proxy
