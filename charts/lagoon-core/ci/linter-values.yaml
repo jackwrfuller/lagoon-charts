@@ -29,6 +29,7 @@ keycloakAdminEmail: admin@example.com
 oauth2proxy:
   provider: oidc
   oidcSkipIssuerVerification: "true"
+  clientID: lagoon-oauth2proxy
 
 api:
   replicaCount: 1
