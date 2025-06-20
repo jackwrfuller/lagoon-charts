@@ -1,29 +1,74 @@
+#apiVersion: networking.k8s.io/v1
+#kind: Ingress
+#metadata:
+#  annotations:
+#    acme.cert-manager.io/http01-ingress-class: nginx
+#    kubernetes.io/tls-acme: "true"
+#    meta.helm.sh/release-name: lagoon-core
+#    meta.helm.sh/release-namespace: lagoon-core
+#    nginx.ingress.kubernetes.io/ssl-redirect: "false"
+#  name: lagoon-core-oauth2proxy
+#  namespace: lagoon-core
+#spec:
+#  ingressClassName: nginx
+#  rules:
+#  - host: lagoon-oauth2proxy.172.18.0.240.nip.io
+#    http:
+#      paths:
+#      - backend:
+#          service:
+#            name: lagoon-core-oauth2proxy
+#            port:
+#              number: 4180
+#        path: /
+#        pathType: Prefix
+#  tls:
+#  - hosts:
+#    - lagoon-oauth2proxy.172.18.0.240.nip.io
+#    secretName: oauth2proxy-tls
+{{- if .Values.oauth2proxy.ingress.enabled -}}
+{{- $fullName := include "lagoon-core.oauth2proxy.fullname" . -}}
+{{- $svcPort := .Values.oauth2proxy.service.port -}}
 apiVersion: networking.k8s.io/v1
 kind: Ingress
 metadata:
+  name: {{ $fullName }}
+  labels:
+    {{- include "lagoon-core.oauth2proxy.labels" . | nindent 4 }}
   annotations:
-    acme.cert-manager.io/http01-ingress-class: nginx
-    kubernetes.io/tls-acme: "true"
-    meta.helm.sh/release-name: lagoon-core
-    meta.helm.sh/release-namespace: lagoon-core
-    nginx.ingress.kubernetes.io/ssl-redirect: "false"
-  name: lagoon-core-oauth2proxy
-  namespace: lagoon-core
+    {{- with coalesce .Values.oauth2proxy.ingress.ingressClassName .Values.defaultIngressClassName }}
+    acme.cert-manager.io/http01-ingress-class: {{ . }}
+    {{- end }}
+    {{- with .Values.oauth2proxy.ingress.annotations }}
+      {{- toYaml . | nindent 4 }}
+    {{- end }}
 spec:
-  ingressClassName: nginx
+  {{- with coalesce .Values.oauth2proxy.ingress.ingressClassName .Values.defaultIngressClassName }}
+  ingressClassName: {{ . }}
+  {{- end }}
+  {{- if .Values.oauth2proxy.ingress.tls }}
+  tls:
+    {{- range .Values.oauth2proxy.ingress.tls }}
+  - hosts:
+      {{- range .hosts }}
+      - {{ . | quote }}
+      {{- end }}
+    secretName: {{ .secretName }}
+    {{- end }}
+  {{- end }}
   rules:
-  - host: lagoon-oauth2proxy.172.18.0.240.nip.io
+  {{- range .Values.oauth2proxy.ingress.hosts }}
+  - host: {{ .host | quote }}
     http:
       paths:
-      - backend:
-          service:
-            name: lagoon-core-oauth2proxy
-            port:
-              number: 4180
-        path: /
+      {{- range .paths }}
+      - path: {{ . }}
         pathType: Prefix
-  tls:
-  - hosts:
-    - lagoon-oauth2proxy.172.18.0.240.nip.io
-    secretName: oauth2proxy-tls
-
+        backend:
+          service:
+            name: {{ $fullName }}
+            port:
+              number: {{ $svcPort }}
+      {{- end }}
+  {{- end }}
+{{- end }}
