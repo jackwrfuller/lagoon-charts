@@ -8,10 +8,9 @@ metadata:
 spec:
   type: {{ .Values.oauth2proxy.service.type }}
   ports:
-  - name: oauth2proxy
-    port: 4180
-    protocol: TCP
-    targetPort: 4180
+  - port: {{ .Values.keycloak.service.port }}
+    targetPort: http-4180
+    name: http-4180
   selector:
     {{- include "lagoon-core.oauth2proxy.selectorLabels" . | nindent 4 }}
 {{- end }}
