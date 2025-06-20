@@ -513,7 +513,7 @@ endif
 		--set oauth2proxy.ingress.enabled=true \
 		--set oauth2proxy.ingress.hosts[0].host="lagoon-oauth2proxy.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
 		--set oauth2proxy.ingress.hosts[0].paths[0]="/" \
-		--set oauth2proxy.service.port=4180
+		--set oauth2proxy.service.port=4180 \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo "--set oauth2proxy.ingress.tls[0].hosts[0]=lagoon-oauth2proxy.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set oauth2proxy.ingress.tls[0].secretName=oauth2proxy-tls') \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set-string oauth2proxy.ingress.annotations.kubernetes\\.io/tls-acme=true') \
