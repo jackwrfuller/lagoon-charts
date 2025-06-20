@@ -20,13 +20,6 @@ spec:
             name: lagoon-core-oauth2proxy
             port:
               number: 4180
-        path: /oauth2
-        pathType: Prefix
-      - backend:
-          service:
-            name: lagoon-core-oauth2proxy
-            port:
-              number: 80
         path: /
         pathType: Prefix
   tls:
