@@ -8,7 +8,7 @@ metadata:
 spec:
   type: {{ .Values.oauth2proxy.service.type }}
   ports:
-  - port: {{ .Values.keycloak.service.port }}
+  - port: {{ .Values.oauth2proxy.service.port }}
     targetPort: http-4180
     name: http-4180
   selector:
