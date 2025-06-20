@@ -27,6 +27,8 @@ sshTokenEndpoint: ssh-token.example.com
 keycloakAdminEmail: admin@example.com
 
 oauth2proxy:
+  ingress:
+    enabled: true
   provider: oidc
   oidcSkipIssuerVerification: "true"
   clientID: lagoon-oauth2proxy
