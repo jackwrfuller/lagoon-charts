@@ -517,7 +517,7 @@ endif
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo "--set oauth2proxy.ingress.tls[0].hosts[0]=lagoon-oauth2proxy.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set oauth2proxy.ingress.tls[0].secretName=oauth2proxy-tls') \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set-string oauth2proxy.ingress.annotations.kubernetes\\.io/tls-acme=true') \
-		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set-string .ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/ssl-redirect=false') \
+		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set-string oauth2proxy.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/ssl-redirect=false') \
 		--set webhookHandler.ingress.enabled=true \
 		--set webhookHandler.ingress.hosts[0].host="lagoon-webhook.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
 		--set webhookHandler.ingress.hosts[0].paths[0]="/" \
