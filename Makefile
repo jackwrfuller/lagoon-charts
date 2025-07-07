@@ -111,6 +111,7 @@ LOGS2EMAIL_DISABLED = false
 LOGS2ROCKETCHAT_DISABLED = true
 LOGS2EMAIL_DISABLED = true
 LOGS2MICROSOFTTEAMS_DISABLED = true
+LOGS2WEBHOOKS_DISABLED = false
 
 # install k8up v1 (backup.appuio.ch/v1alpah1) and v2 (k8up.io/v1)
 # specifify which version the remote controller should start with
