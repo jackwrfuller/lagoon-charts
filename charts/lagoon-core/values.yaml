@@ -727,6 +727,8 @@ logs2notifications:
     disabled: true
   logs2s3:
     disabled: false
+  finegrainedNotifications:
+    enabled: false
 
   podAnnotations: {}
 

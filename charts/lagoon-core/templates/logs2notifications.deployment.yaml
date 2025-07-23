@@ -56,6 +56,9 @@ spec:
         {{- if .Values.logs2notifications.logs2s3.disabled }}
         - "--disable-s3"
         {{- end }}
+        {{- if .Values.logs2notifications.finegrainedNotifications.enabled }}
+        - "--finegrained-notifications"
+        {{- end }}
         env:
         - name: GRAPHQL_ENDPOINT
           value: http://{{ include "lagoon-core.api.fullname" . }}:{{ .Values.api.service.port }}

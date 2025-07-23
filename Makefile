@@ -117,6 +117,9 @@ LOGS2ROCKETCHAT_DISABLED = true
 LOGS2EMAIL_DISABLED = false
 LOGS2MICROSOFTTEAMS_DISABLED = true
 
+# enable finegrained notifications in charts ci
+FINEGRAINED_NOTIFICATIONS_ENABLED = true
+
 # install k8up v1 (backup.appuio.ch/v1alpah1) and v2 (k8up.io/v1)
 # specifify which version the remote controller should start with
 # currently lagoon supports both versions, but may one day only support k8up v2
@@ -562,6 +565,7 @@ endif
 		--set logs2notifications.logs2rocketchat.disabled=$(LOGS2ROCKETCHAT_DISABLED) \
 		--set logs2notifications.logs2slack.disabled=$(LOGS2SLACK_DISABLED) \
 		--set logs2notifications.logs2webhooks.disabled=$(LOGS2WEBHOOKS_DISABLED) \
+		--set logs2notifications.finegrainedNotifications.enabled=$(FINEGRAINED_NOTIFICATIONS_ENABLED) \
 		$$([ $(IMAGE_REGISTRY) ] && [ $(INSTALL_STABLE_CORE) != true ] && echo '--set ssh.image.repository=$(IMAGE_REGISTRY)/ssh') \
 		$$([ $(IMAGE_REGISTRY) ] && [ $(INSTALL_STABLE_CORE) != true ] && echo '--set webhookHandler.image.repository=$(IMAGE_REGISTRY)/webhook-handler') \
 		$$([ $(IMAGE_REGISTRY) ] && [ $(INSTALL_STABLE_CORE) != true ] && echo '--set webhooks2tasks.image.repository=$(IMAGE_REGISTRY)/webhooks2tasks') \
