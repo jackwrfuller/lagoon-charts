@@ -39,12 +39,12 @@ OVERRIDE_BUILD_DEPLOY_DIND_IMAGE =
 OVERRIDE_ACTIVE_STANDBY_TASK_IMAGE =
 # Overrides the image tag for amazeeio/lagoon-builddeploy whose default is
 # the lagoon-build-deploy chart appVersion.
-OVERRIDE_BUILD_DEPLOY_CONTROLLER_IMAGETAG =
+OVERRIDE_REMOTE_CONTROLLER_IMAGETAG =
 # Overrides the image repository for amazeeio/lagoon-builddeploy whose default
 # is the amazeeio/lagoon-builddeploy.
-OVERRIDE_BUILD_DEPLOY_CONTROLLER_IMAGE_REPOSITORY =
+OVERRIDE_REMOTE_CONTROLLER_IMAGE_REPOSITORY =
 # If set, sets the lagoon-build-deploy chart .Value.rootless=true.
-BUILD_DEPLOY_CONTROLLER_ROOTLESS_BUILD_PODS =
+REMOTE_CONTROLLER_ROOTLESS_BUILD_PODS =
 # Control the feature flags on the lagoon-build-deploy chart. Valid values: `enabled` or `disabled`.
 LAGOON_FEATURE_FLAG_DEFAULT_ROOTLESS_WORKLOAD = enabled
 LAGOON_FEATURE_FLAG_DEFAULT_ISOLATION_NETWORK_POLICY = enabled
@@ -96,10 +96,17 @@ STABLE_BUILDDEPLOY_CHART_VERSION =
 # that it will disable the broker tls settings in lagoon-build-deploy
 STABLE_CORE_CHART_VERSION_PRE_BROKER_TLS = 1.52.0
 
+# versions of core before this version had the nats tls certs defined in the linter values
+STABLE_CORE_CHART_VERSION_PRE_NATS_TLS = 1.54.2
+STABLE_REMOTE_CHART_VERSION_PRE_NATS_TLS = 0.99.1
+
 INSTALL_UNAUTHENTICATED_REGISTRY = false
 
 # don't install mailpit in charts ci
 INSTALL_MAILPIT = false
+
+# don't install prometheus in charts ci
+INSTALL_PROMETHEUS = false
 
 # install dbaas providers by default
 INSTALL_MARIADB_PROVIDER = true
@@ -109,8 +116,13 @@ INSTALL_MONGODB_PROVIDER = true
 LOGS2SLACK_DISABLED = false
 LOGS2EMAIL_DISABLED = false
 LOGS2ROCKETCHAT_DISABLED = true
-LOGS2EMAIL_DISABLED = true
+LOGS2EMAIL_DISABLED = false
 LOGS2MICROSOFTTEAMS_DISABLED = true
+
+# set these to seed the lagoon-core installation with an initial user or org
+LAGOON_SEED_USERNAME = 
+LAGOON_SEED_PASSWORD = 
+LAGOON_SEED_ORGANIZATION = 
 
 # install k8up v1 (backup.appuio.ch/v1alpah1) and v2 (k8up.io/v1)
 # specifify which version the remote controller should start with
@@ -118,19 +130,24 @@ LOGS2MICROSOFTTEAMS_DISABLED = true
 # this can be used to verify upgrades
 # by default this will not be install in charts testing, but uselagoon/lagoon can consume it for local development
 INSTALL_K8UP = false
-BUILD_DEPLOY_CONTROLLER_K8UP_VERSION = v2
+REMOTE_CONTROLLER_K8UP_VERSION = v2
+
+# optionally install aergia for local testing
+INSTALL_AERGIA = false
 
 TIMEOUT = 30m
 HELM = helm
 KUBECTL = kubectl
 JQ = jq
 
+PROMETHEUS_VERSION = 75.9.0
+
 .PHONY: fill-test-ci-values
 fill-test-ci-values:
 	export ingressIP="$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" \
 		&& export keycloakAuthServerClientSecret="$$($(KUBECTL) -n lagoon-core get secret lagoon-core-keycloak -o json | $(JQ) -r '.data.KEYCLOAK_AUTH_SERVER_CLIENT_SECRET | @base64d')" \
-		&& export routeSuffixHTTP="$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
-		&& export routeSuffixHTTPS="$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
+		&& export routeSuffixHTTP="a.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
+		&& export routeSuffixHTTPS="a.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
 		&& export token="$$($(KUBECTL) -n lagoon get secret lagoon-remote-ssh-core-token -o json | $(JQ) -r '.data.token | @base64d')" \
 		&& export $$([ $(IMAGE_TAG) ] && echo imageTag='$(IMAGE_TAG)' || echo imageTag='latest') \
 		&& export webhookHandler="lagoon-core-webhook-handler" \
@@ -143,7 +160,7 @@ fill-test-ci-values:
 # it picks a small range from the end of the network used by the cluster
 .PHONY: install-metallb
 install-metallb:
-	LAGOON_KIND_CIDR_BLOCK=$$(docker network inspect $(DOCKER_NETWORK) | $(JQ) '. [0].IPAM.Config[0].Subnet' | tr -d '"') && \
+	LAGOON_KIND_CIDR_BLOCK=$$(docker network inspect $(DOCKER_NETWORK) | $(JQ) '.[].Containers[].IPv4Address' | tr -d '"') && \
 	export LAGOON_KIND_NETWORK_RANGE=$$(echo $${LAGOON_KIND_CIDR_BLOCK%???} | awk -F'.' '{print $$1,$$2,$$3,240}' OFS='.')/29 && \
 	$(HELM) upgrade \
 		--install \
@@ -156,6 +173,9 @@ install-metallb:
 		metallb/metallb && \
 	$$(envsubst < test-suite.metallb-pool.yaml.tpl > test-suite.metallb-pool.yaml) && \
 	$(KUBECTL) apply -f test-suite.metallb-pool.yaml
+ifeq ($(INSTALL_PROMETHEUS),true)
+	$(HELM) show crds prometheus-community/kube-prometheus-stack --version $(PROMETHEUS_VERSION) | $(KUBECTL) create -f - || true
+endif
 
 # cert-manager is used to allow self-signed certificates to be generated automatically by ingress in the same way lets-encrypt would
 # this allows for the registry and other services to use certificates
@@ -177,9 +197,34 @@ install-certmanager: generate-ca
 		--version=v1.12.6 \
 		cert-manager \
 		jetstack/cert-manager
-	$(KUBECTL) -n cert-manager delete secret lagoon-test-secret || echo "lagoon-test-secret doesn't exist, ignoring"
-	$(KUBECTL) -n cert-manager create secret generic lagoon-test-secret --from-file=tls.crt=certs/rootCA.pem --from-file=tls.key=certs/rootCA-key.pem --from-file=ca.crt=certs/rootCA.pem
-	$(KUBECTL) apply -f test-suite.certmanager-issuer-ss.yaml
+	$(KUBECTL) -n cert-manager create secret generic lagoon-test-secret --from-file=tls.crt=certs/rootCA.pem --from-file=tls.key=certs/rootCA-key.pem --from-file=ca.crt=certs/rootCA.pem || true
+	$(KUBECTL) create -f test-suite.certmanager-issuer-ss.yaml || true
+
+ifeq ($(INSTALL_AERGIA),true)
+.PHONY: install-aergia
+install-aergia:
+	$(HELM) upgrade \
+		--install \
+		--create-namespace \
+		--namespace aergia \
+		--wait \
+		--timeout $(TIMEOUT) \
+		--set templates.enabled=false \
+		--set idling.enabled=true \
+		--set idling.serviceCron="0\,15\,30\,45 * * * *" \
+		--set idling.podCheckInterval=5m \
+		--set idling.prometheusCheckInterval=5m \
+		--set idling.prometheusEndpoint="http://kube-prometheus-kube-prome-prometheus.kube-prometheus.svc:9090" \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set servicemonitor.enabled=true') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set metrics.enabled=true') \
+		--set unidling.verifyRequests.enabled=false \
+		--version=0.7.2 \
+		aergia \
+		amazeeio/aergia
+
+# install aergia before installing ingress-nginx
+install-ingress: install-aergia
+endif
 
 .PHONY: install-ingress
 install-ingress: install-certmanager
@@ -196,12 +241,21 @@ install-ingress: install-certmanager
 		--set controller.service.nodePorts.https=32443 \
 		--set controller.config.annotations-risk-level=Critical \
 		--set controller.config.proxy-body-size=0 \
-		--set controller.config.hsts="false" \
+		--set controller.config.hsts=false \
 		--set controller.watchIngressWithoutClass=true \
 		--set controller.ingressClassResource.default=true \
+		--set controller.addHeaders.X-Lagoon="remote>ingress-nginx>$$namespace:$$service_name" \
+		--set controller.extraArgs.default-ssl-certificate=ingress-nginx/default-ingress-certificate-tls \
+		$$([ $(INSTALL_AERGIA) = true ] && echo '--set controller.extraArgs.default-backend-service=aergia/aergia-backend') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set controller.metrics.enabled=true') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set controller.metrics.serviceMonitor.enabled=true') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set controller.metrics.serviceMonitor.additionalLabels.release=kube-prometheus') \
 		--version=4.12.1 \
 		ingress-nginx \
 		ingress-nginx/ingress-nginx
+	export INGRESS_IP="$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}')" && \
+		$$(envsubst < ci/default-ingress-certificate-request.yaml.tpl > ci/default-ingress-certificate-request.yaml)
+	$(KUBECTL) --namespace ingress-nginx create -f ci/default-ingress-certificate-request.yaml || true
 
 .PHONY: install-registry
 ifeq ($(INSTALL_UNAUTHENTICATED_REGISTRY),false)
@@ -247,6 +301,29 @@ install-registry: install-ingress
 		registry \
 		twuni/docker-registry
 endif
+
+.PHONY: install-prometheus
+install-prometheus:
+	@$(KUBECTL) create namespace kube-prometheus 2>/dev/null || true
+	@for dashboard in $(shell ls ci/grafana-dashboards); do \
+		$(KUBECTL) --namespace kube-prometheus apply -f ci/grafana-dashboards/$$dashboard; \
+	done
+	@$(HELM) upgrade \
+		--install --create-namespace \
+		--namespace kube-prometheus \
+		--wait \
+		--timeout $(TIMEOUT) \
+		--version $(PROMETHEUS_VERSION) \
+		--set grafana.ingress.enabled=true \
+		--set grafana.sidecar.dashboards.enabled=true \
+		--set grafana.ingress.hosts[0]="grafana.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
+		--set grafana.ingress.tls[0].hosts[0]="grafana.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
+		--set grafana.ingress.tls[0].secretName=grafana-tls \
+		--set-string grafana.ingress.annotations.kubernetes\\.io/tls-acme=true \
+		--set-string grafana.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/ssl-redirect=false \
+		--set prometheus.prometheusSpec.serviceMonitorSelectorNilUsesHelmValues=false \
+		--set prometheus.prometheusSpec.podMonitorSelectorNilUsesHelmValues=false \
+		kube-prometheus prometheus-community/kube-prometheus-stack
 
 .PHONY: install-mailpit
 install-mailpit:
@@ -391,6 +468,9 @@ install-lagoon-dependencies: install-registry install-minio install-bulk-storage
 ifeq ($(INSTALL_MAILPIT),true)
 install-lagoon-dependencies: install-mailpit
 endif
+ifeq ($(INSTALL_PROMETHEUS),true)
+install-lagoon-dependencies: install-prometheus
+endif
 ifeq ($(INSTALL_MARIADB_PROVIDER),true)
 install-lagoon-dependencies: install-mariadb
 endif
@@ -413,19 +493,26 @@ endif
 install-lagoon: install-lagoon-core install-lagoon-remote install-lagoon-build-deploy
 
 # this is only used by lint tests at the moment
-.PHONY: install-broker-certs
-install-broker-certs: install-lagoon-core-broker-certs install-lagoon-remote-broker-certs
+.PHONY: install-lagoon-certs
+install-lagoon-certs: install-lagoon-core-certs install-lagoon-remote-certs
 
 # this should not need to be changed in regular instances, only used by lint tests at the moment
 CORE_NAMESPACE = lagoon-core
-.PHONY: install-lagoon-core-broker-certs
-install-lagoon-core-broker-certs:
+.PHONY: install-lagoon-core-certs
+install-lagoon-core-certs:
 # create the namespace if it doesn't exist so we can request a certificate from our local testing CA for the broker
-	$(KUBECTL) create namespace $(CORE_NAMESPACE) 2>/dev/null || true
-	$(KUBECTL) -n $(CORE_NAMESPACE) apply -f broker-core-certificate-request.yaml
+	@$(KUBECTL) create namespace $(CORE_NAMESPACE) 2>/dev/null || true
+	@$(KUBECTL) -n $(CORE_NAMESPACE) apply -f ci/broker-core-certificate-request.yaml
+ifeq ($(INSTALL_STABLE_CORE),true)
+ifeq (,$(subst ",,$(STABLE_CORE_CHART_VERSION)))
+	$(eval STABLE_CORE_CHART_VERSION = $(shell $(HELM) search repo lagoon/lagoon-core -o json | $(JQ) -r '.[]|.version'))
+endif
+endif
+	@[ $(INSTALL_STABLE_CORE) = false ] || [ $(shell expr $(STABLE_CORE_CHART_VERSION) \> $(STABLE_CORE_CHART_VERSION_PRE_NATS_TLS)) = 1 ] \
+		&& $(KUBECTL) -n $(CORE_NAMESPACE) apply -f ci/nats-core-certificate-request.yaml || true
 
 .PHONY: install-lagoon-core
-install-lagoon-core: install-lagoon-core-broker-certs
+install-lagoon-core: install-lagoon-core-certs
 ifneq ($(INSTALL_STABLE_CORE),true)
 	$(HELM) dependency build ./charts/lagoon-core/
 else
@@ -433,6 +520,7 @@ ifeq (,$(subst ",,$(STABLE_CORE_CHART_VERSION)))
 	$(eval STABLE_CORE_CHART_VERSION = $(shell $(HELM) search repo lagoon/lagoon-core -o json | $(JQ) -r '.[]|.version'))
 endif
 endif
+	$(KUBECTL) create namespace lagoon-core 2>/dev/null || true
 	$(HELM) upgrade \
 		--install \
 		--create-namespace \
@@ -445,6 +533,7 @@ endif
 		$$([ $(OVERRIDE_ACTIVE_STANDBY_TASK_IMAGE) ] && [ $(INSTALL_STABLE_CORE) != true ] && echo '--set overwriteActiveStandbyTaskImage=$(OVERRIDE_ACTIVE_STANDBY_TASK_IMAGE)') \
 		$$([ $(OVERRIDE_BUILD_DEPLOY_DIND_IMAGE) ] && [ $(INSTALL_STABLE_CORE) != true ] && echo '--set buildDeployImage.default.image=$(OVERRIDE_BUILD_DEPLOY_DIND_IMAGE)') \
 		$$([ $(DISABLE_CORE_HARBOR) ] && echo '--set api.additionalEnvs.DISABLE_CORE_HARBOR=$(DISABLE_CORE_HARBOR)') \
+		--set api.additionalEnvs.ENABLE_SAVED_HISTORY_EXPORT="true" \
 		$$([ $(OPENSEARCH_INTEGRATION_ENABLED) ] && echo '--set api.additionalEnvs.OPENSEARCH_INTEGRATION_ENABLED=$(OPENSEARCH_INTEGRATION_ENABLED)') \
 		--set "keycloakFrontEndURL=$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo "https" || echo "http")://lagoon-keycloak.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
 		--set "oauth2proxyFrontEndURL=$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo "https" || echo "http")://lagoon-oauth2proxy.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io" \
@@ -472,7 +561,11 @@ endif
 		--set keycloakDB.vendor=$(CORE_DATABASE_VENDOR) \
 		$$([ $(IMAGE_REGISTRY) ] && [ $(INSTALL_STABLE_CORE) != true ] && echo '--set logs2notifications.image.repository=$(IMAGE_REGISTRY)/logs2notifications') \
 		$$([ $(INSTALL_MAILPIT) = true ] && echo '--set logs2notifications.additionalEnvs.EMAIL_HOST=mailpit-smtp.mailpit.svc') \
-		$$([ $(INSTALL_MAILPIT) = true ] && echo '--set logs2notifications.additionalEnvs.EMAIL_PORT="25"') \
+		$$([ $(INSTALL_MAILPIT) = true ] && echo '--set logs2notifications.additionalEnvs.EMAIL_PORT=25') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set keycloak.serviceMonitor.enabled=true') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set sshPortalAPI.serviceMonitor.enabled=true') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set sshToken.serviceMonitor.enabled=true') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set broker.serviceMonitor.enabled=true') \
 		--set logs2notifications.logs2email.disabled=$(LOGS2EMAIL_DISABLED) \
 		--set logs2notifications.logs2microsoftteams.disabled=$(LOGS2MICROSOFTTEAMS_DISABLED) \
 		--set logs2notifications.logs2rocketchat.disabled=$(LOGS2ROCKETCHAT_DISABLED) \
@@ -529,6 +622,9 @@ endif
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set broker.ingress.tls[0].secretName=broker-tls') \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set-string broker.ingress.annotations.kubernetes\\.io/tls-acme=true') \
 		$$([ $(LAGOON_CORE_USE_HTTPS) = true ] && echo '--set-string broker.ingress.annotations.nginx\\.ingress\\.kubernetes\\.io/ssl-redirect=false') \
+		$$([ $(LAGOON_SEED_USERNAME) ] && echo '--set lagoonSeedUsername=$(LAGOON_SEED_USERNAME)') \
+		$$([ $(LAGOON_SEED_PASSWORD) ] && echo '--set lagoonSeedPassword=$(LAGOON_SEED_PASSWORD)') \
+		$$([ $(LAGOON_SEED_ORGANIZATION) ] && echo '--set lagoonSeedOrganization=$(LAGOON_SEED_ORGANIZATION)') \
 		$$([ $(INSTALL_STABLE_CORE) != true ] && [ $(SSHPORTALAPI_IMAGE_REPO) ] && echo '--set sshPortalAPI.image.repository=$(SSHPORTALAPI_IMAGE_REPO)') \
 		$$([ $(INSTALL_STABLE_CORE) != true ] && [ $(SSHPORTALAPI_IMAGE_TAG) ] && echo '--set sshPortalAPI.image.tag=$(SSHPORTALAPI_IMAGE_TAG)') \
 		$$([ $(INSTALL_STABLE_CORE) != true ] && [ $(SSHTOKEN_IMAGE_REPO) ] && echo '--set sshToken.image.repository=$(SSHTOKEN_IMAGE_REPO)') \
@@ -546,22 +642,32 @@ endif
 
 # this should not need to be changed in regular instances, only used by lint tests at the moment
 REMOTE_NAMESPACE = lagoon
-.PHONY: install-lagoon-remote-broker-certs
-install-lagoon-remote-broker-certs:
+.PHONY: install-lagoon-remote-certs
+install-lagoon-remote-certs:
 # create the namespace if it doesn't exist and add the CA certificate for the remote to use where required
-	$(KUBECTL) create namespace $(REMOTE_NAMESPACE) 2>/dev/null || true
-	$(KUBECTL) -n $(REMOTE_NAMESPACE) delete secret lagoon-remote-broker-tls 2>/dev/null || true
-	$(KUBECTL) -n $(REMOTE_NAMESPACE) create secret generic lagoon-remote-broker-tls --from-file=ca.crt=certs/rootCA.pem
+	@$(KUBECTL) create namespace $(REMOTE_NAMESPACE) 2>/dev/null || true
+	@$(KUBECTL) -n $(REMOTE_NAMESPACE) delete secret lagoon-remote-broker-tls 2>/dev/null || true
+	@$(KUBECTL) -n $(REMOTE_NAMESPACE) create secret generic lagoon-remote-broker-tls --from-file=ca.crt=certs/rootCA.pem
+ifeq ($(INSTALL_STABLE_REMOTE),true)
+ifeq (,$(subst ",,$(STABLE_REMOTE_CHART_VERSION)))
+	$(eval STABLE_REMOTE_CHART_VERSION = $(shell $(HELM) search repo lagoon/lagoon-remote -o json | $(JQ) -r '.[]|.version'))
+endif
+endif
+	@[ $(INSTALL_STABLE_REMOTE) = false ] || [ $(shell expr $(STABLE_REMOTE_CHART_VERSION) \> $(STABLE_REMOTE_CHART_VERSION_PRE_NATS_TLS)) = 1 ] \
+		&& $(KUBECTL) -n $(REMOTE_NAMESPACE) delete secret lagoon-remote-nats-tls 2>/dev/null || true
+	@[ $(INSTALL_STABLE_REMOTE) = false ] || [ $(shell expr $(STABLE_REMOTE_CHART_VERSION) \> $(STABLE_REMOTE_CHART_VERSION_PRE_NATS_TLS)) = 1 ] \
+		&& $(KUBECTL) -n $(REMOTE_NAMESPACE) create secret generic lagoon-remote-nats-tls --from-file=ca.crt=certs/rootCA.pem || true
 
 .PHONY: install-lagoon-remote
-install-lagoon-remote: install-lagoon-remote-broker-certs
+install-lagoon-remote: install-lagoon-remote-certs
 ifneq ($(INSTALL_STABLE_REMOTE),true)
 	$(HELM) dependency build ./charts/lagoon-remote/
 else
 ifeq (,$(subst ",,$(STABLE_REMOTE_CHART_VERSION)))
-	$(eval STABLE_REMOTE_CHART_VERSION := $(shell $(HELM) search repo lagoon/lagoon-remote -o json | $(JQ) -r '.[]|.version'))
+	$(eval STABLE_REMOTE_CHART_VERSION = $(shell $(HELM) search repo lagoon/lagoon-remote -o json | $(JQ) -r '.[]|.version'))
 endif
 endif
+	$(KUBECTL) create namespace lagoon 2>/dev/null || true
 	$(HELM) upgrade \
 		--install \
 		--create-namespace \
@@ -615,8 +721,12 @@ endif
 		$$([ $(LAGOON_SSH_PORTAL_LOADBALANCER) ] && echo '--set sshPortal.service.ports.sshserver=2222') \
 		$$([ $(INSTALL_STABLE_REMOTE) != true ] && [ $(SSHPORTAL_IMAGE_REPO) ] && echo '--set sshPortal.image.repository=$(SSHPORTAL_IMAGE_REPO)') \
 		$$([ $(INSTALL_STABLE_REMOTE) != true ] && [ $(SSHPORTAL_IMAGE_TAG) ] && echo '--set sshPortal.image.tag=$(SSHPORTAL_IMAGE_TAG)') \
+		$$([ $(INSTALL_PROMETHEUS) = true ] && echo '--set sshPortal.serviceMonitor.enabled=true') \
 		lagoon-remote \
 		$$(if [ $(INSTALL_STABLE_REMOTE) = true ]; then echo 'lagoon/lagoon-remote'; else echo './charts/lagoon-remote'; fi)
+	# rerun the remote certs installation as a workaround for the way the localstack used to seed the nats certs from helm
+	# they are installed as a secret directly since STABLE_REMOTE_CHART_VERSION_PRE_NATS_TLS
+	$(MAKE) install-lagoon-remote-certs
 
 # The following target should only be called as a dependency of lagoon-remote
 # Do not install without lagoon-core
@@ -650,10 +760,10 @@ endif
 		--set "QoSMaxBuilds=5" \
 		$$([ $(INSTALL_STABLE_CORE) = true ] && [ $(shell expr $(STABLE_CORE_CHART_VERSION) \<= $(STABLE_CORE_CHART_VERSION_PRE_BROKER_TLS)) = 1 ] && echo --set "rabbitMQHostname=lagoon-core-broker.lagoon-core.svc") \
 		$$([ $(INSTALL_STABLE_CORE) = true ] && [ $(shell expr $(STABLE_CORE_CHART_VERSION) \<= $(STABLE_CORE_CHART_VERSION_PRE_BROKER_TLS)) = 1 ] && echo --set "broker.tls.enabled=false") \
-		$$([ $(BUILD_DEPLOY_CONTROLLER_K8UP_VERSION) = "v2" ] && [ $(INSTALL_K8UP) = true ] && \
-			echo "--set extraArgs={--skip-tls-verify=true,--lagoon-feature-flag-support-k8upv2}" || \
-			echo "--set extraArgs={--skip-tls-verify=true}") \
-		$$([ $(BUILD_DEPLOY_CONTROLLER_K8UP_VERSION) = "v2" ] && [ $(INSTALL_K8UP) = true ] && \
+		$$([ $(REMOTE_CONTROLLER_K8UP_VERSION) = "v2" ] && [ $(INSTALL_K8UP) = true ] && \
+			echo "--set extraArgs={--skip-tls-verify=true,--cleanup-harbor-repository-on-delete,--lagoon-feature-flag-support-k8upv2}" || \
+			echo "--set extraArgs={--skip-tls-verify=true,--cleanup-harbor-repository-on-delete}") \
+		$$([ $(REMOTE_CONTROLLER_K8UP_VERSION) = "v2" ] && [ $(INSTALL_K8UP) = true ] && \
 			echo "--set extraEnvs[0].name=LAGOON_FEATURE_FLAG_DEFAULT_K8UP_V2,extraEnvs[0].value=enabled") \
 		$$([ $(INSTALL_UNAUTHENTICATED_REGISTRY) = false ] && echo --set "harbor.enabled=true") \
 		$$([ $(INSTALL_UNAUTHENTICATED_REGISTRY) = false ] && echo --set "harbor.adminPassword=Harbor12345") \
@@ -661,9 +771,9 @@ endif
 		$$([ $(INSTALL_UNAUTHENTICATED_REGISTRY) = false ] && echo --set "harbor.host=https://registry.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
 		$$([ $(INSTALL_UNAUTHENTICATED_REGISTRY) = true ] && echo --set "unauthenticatedRegistry=registry.$$($(KUBECTL) -n ingress-nginx get services ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
 		$$([ $(OVERRIDE_BUILD_DEPLOY_DIND_IMAGE) ] && [ $(INSTALL_STABLE_BUILDDEPLOY) = false ] && echo '--set overrideBuildDeployImage=$(OVERRIDE_BUILD_DEPLOY_DIND_IMAGE)') \
-		$$([ $(OVERRIDE_BUILD_DEPLOY_CONTROLLER_IMAGETAG) ] && [ $(INSTALL_STABLE_BUILDDEPLOY) = false ] && echo '--set image.tag=$(OVERRIDE_BUILD_DEPLOY_CONTROLLER_IMAGETAG)') \
-		$$([ $(OVERRIDE_BUILD_DEPLOY_CONTROLLER_IMAGE_REPOSITORY) ] && [ $(INSTALL_STABLE_BUILDDEPLOY) = false ] && echo '--set image.repository=$(OVERRIDE_BUILD_DEPLOY_CONTROLLER_IMAGE_REPOSITORY)') \
-		$$([ $(BUILD_DEPLOY_CONTROLLER_ROOTLESS_BUILD_PODS) ] && echo '--set rootlessBuildPods=true') \
+		$$([ $(OVERRIDE_REMOTE_CONTROLLER_IMAGETAG) ] && [ $(INSTALL_STABLE_BUILDDEPLOY) = false ] && echo '--set image.tag=$(OVERRIDE_REMOTE_CONTROLLER_IMAGETAG)') \
+		$$([ $(OVERRIDE_REMOTE_CONTROLLER_IMAGE_REPOSITORY) ] && [ $(INSTALL_STABLE_BUILDDEPLOY) = false ] && echo '--set image.repository=$(OVERRIDE_REMOTE_CONTROLLER_IMAGE_REPOSITORY)') \
+		$$([ $(REMOTE_CONTROLLER_ROOTLESS_BUILD_PODS) ] && echo '--set rootlessBuildPods=true') \
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_ROOTLESS_WORKLOAD) ] && echo '--set lagoonFeatureFlagDefaultRootlessWorkload=$(LAGOON_FEATURE_FLAG_DEFAULT_ROOTLESS_WORKLOAD)') \
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_ISOLATION_NETWORK_POLICY) ] && echo '--set lagoonFeatureFlagDefaultIsolationNetworkPolicy=$(LAGOON_FEATURE_FLAG_DEFAULT_ISOLATION_NETWORK_POLICY)') \
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO) ] && echo '--set lagoonFeatureFlagDefaultRWX2RWO=$(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO)') \
@@ -692,11 +802,7 @@ install-bulk-storageclass:
 
 .PHONY: create-kind-cluster
 create-kind-cluster:
-	docker network inspect kind >/dev/null || docker network create kind \
-		&& LAGOON_KIND_CIDR_BLOCK=$$(docker network inspect kind | $(JQ) '. [0].IPAM.Config[0].Subnet' | tr -d '"') \
-		&& export KIND_NODE_IP=$$(echo $${LAGOON_KIND_CIDR_BLOCK%???} | awk -F'.' '{print $$1,$$2,$$3,240}' OFS='.') \
-		&& envsubst < test-suite.kind-config.yaml.tpl > test-suite.kind-config.yaml \
-		&& envsubst < test-suite.kind-config.calico.yaml.tpl > test-suite.kind-config.calico.yaml
+	docker network inspect kind >/dev/null || docker network create kind
 ifeq ($(USE_CALICO_CNI),true)
 	kind create cluster --wait=60s --config=test-suite.kind-config.calico.yaml \
 		&& $(KUBECTL) create -f ./ci/calico/tigera-operator.yaml --context kind-chart-testing \
@@ -763,3 +869,77 @@ port-forwards: pf-keycloak pf-api pf-ssh pf-ui
 .PHONY: run-tests
 run-tests:
 	$(HELM) test --namespace lagoon-core --timeout 30m lagoon-test
+
+KIND_CLUSTER ?= chart-testing
+KIND_VERSION = v0.27.0
+CHART_TESTING_VERSION = v3.11.0
+KIND = $(realpath ./local-dev/kind)
+ARCH := $(shell uname | tr '[:upper:]' '[:lower:]')
+
+.PHONY: local-dev/kind
+local-dev/kind:	
+ifeq ($(KIND_VERSION), $(shell kind version 2>/dev/null | sed -nE 's/kind (v[0-9.]+).*/\1/p'))
+	$(info linking local kind version $(KIND_VERSION))
+	$(eval KIND = $(realpath $(shell command -v kind)))
+else
+ifneq ($(KIND_VERSION), $(shell ./local-dev/kind version 2>/dev/null | sed -nE 's/kind (v[0-9.]+).*/\1/p'))
+	$(info downloading kind version $(KIND_VERSION) for $(ARCH))
+	mkdir -p /local-dev
+	rm local-dev/kind || true
+	curl -sSLo local-dev/kind https://kind.sigs.k8s.io/dl/$(KIND_VERSION)/kind-$(ARCH)-amd64
+	chmod a+x local-dev/kind
+endif
+endif
+
+# this creates a local kind cluster
+.PHONY: kind/create-cluster
+kind/create-cluster: local-dev/kind
+	docker network inspect $(DOCKER_NETWORK) >/dev/null || docker network create $(DOCKER_NETWORK) \
+		&& export KIND_EXPERIMENTAL_DOCKER_NETWORK=$(DOCKER_NETWORK) \
+ 		&& $(KIND) create cluster --wait=60s --name=$(KIND_CLUSTER) --config=test-suite.kind-config.yaml
+	LAGOON_KIND_CIDR_BLOCK=$$(docker network inspect $(DOCKER_NETWORK) | $(JQ) '.[].Containers[].IPv4Address' | tr -d '"') \
+		&& export KIND_NODE_IP=$$(echo $${LAGOON_KIND_CIDR_BLOCK%???} | awk -F'.' '{print $$1,$$2,$$3,240}' OFS='.') \
+		&& envsubst < test-suite.registry.toml.tpl > test-suite.registry.toml \
+		&& export REGISTRY_DIR="/etc/containerd/certs.d/registry.$${KIND_NODE_IP}.nip.io" && \
+		for node in $$($(KIND) get nodes --name $(KIND_CLUSTER)); do \
+			docker exec "$$node" mkdir -p "$${REGISTRY_DIR}"; \
+			cat test-suite.registry.toml | docker exec -i "$$node" cp /dev/stdin "$${REGISTRY_DIR}/hosts.toml"; \
+		done
+
+# install lagoon will create the cluster and then install lagoon only
+.PHONY: kind/install-lagoon
+kind/install-lagoon: kind/create-cluster
+	export KIND_CLUSTER=$(KIND_CLUSTER) && \
+	$(KIND) export kubeconfig --name=$(KIND_CLUSTER) && \
+	kubectl get nodes && kubectl get pods -A && \
+	$(MAKE) install-lagoon
+
+# this will create cluster, install lagoon, and then run tests
+.PHONY: kind/test
+kind/test: kind/install-lagoon
+	$(MAKE) kind/re-test
+
+# this will re-run tests
+.PHONY: kind/re-test
+kind/re-test:
+	export KIND_CLUSTER=$(KIND_CLUSTER) && \
+	$(KIND) get kubeconfig --name=$(KIND_CLUSTER) > ./kubeconfig.kind && \
+	$(MAKE) -O fill-test-ci-values TESTS=$(TESTS) && \
+	docker run --rm --network host --name ct \
+		--volume "$$(pwd)/test-suite-run.ct.yaml:/etc/ct/ct.yaml" \
+		--volume "$$(pwd):/workdir" \
+		--volume "./kubeconfig.kind:/root/.kube/config" \
+		--workdir /workdir \
+		"quay.io/helmpack/chart-testing:$(CHART_TESTING_VERSION)" \
+		ct install --helm-extra-args "--timeout 60m"
+
+# get kubeconfig for local usage
+.PHONY: kind/set-kubeconfig
+kind/set-kubeconfig:
+	export KIND_CLUSTER=$(KIND_CLUSTER) && \
+	$(KIND) export kubeconfig --name=$(KIND_CLUSTER)
+
+# tears down the kind cluster
+.PHONY: kind/clean
+kind/clean:
+	$(KIND) delete cluster --name=$(KIND_CLUSTER) && docker network rm $(DOCKER_NETWORK)

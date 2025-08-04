@@ -82,6 +82,12 @@ Create a default fully qualified app name for api-migratedb-job.
 {{- include "lagoon-core.fullname" . }}-api-migratedb
 {{- end }}
 
+{{/*
+Create a default fully qualified app name for api-seeding-job.
+*/}}
+{{- define "lagoon-core.apiSeeding.fullname" -}}
+{{- include "lagoon-core.fullname" . }}-api-seeding
+{{- end }}
 
 {{/*
 Create a default fully qualified app name for api-db.
@@ -241,10 +247,10 @@ app.kubernetes.io/instance: {{ .Release.Name }}
 
 
 {{/*
-Create a default fully qualified app name for broker-flag-enable job.
+Create a default fully qualified app name for broker-bootstrap job.
 */}}
 {{- define "lagoon-core.brokerFlagEnable.fullname" -}}
-{{- include "lagoon-core.fullname" . }}-broker-flag-enable
+{{- include "lagoon-core.fullname" . }}-broker-bootstrap
 {{- end }}
 
 
