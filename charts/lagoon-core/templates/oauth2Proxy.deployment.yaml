@@ -94,6 +94,8 @@ spec:
           value: {{ .Values.oauth2proxy.caFile}}
         - name: OAUTH2_PROXY_PING_PATH
           value: {{ .Values.oauth2proxy.pingPath }}
+        - name: OAUTH2_PROXY_SILENCE_PING_LOGGING
+          value: {{ .Values.oauth2proxy.silencePingLogging }}
       {{- range $key, $val := .Values.oauth2proxy.additionalEnvs }}
         - name: {{ $key }}
           value: {{ $val | quote }}

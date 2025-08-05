@@ -42,6 +42,7 @@ oauth2proxy:
   reverseProxy: "false"
   caFile: /etc/ssl/certs/keycloak-ca.crt
   pingPath: /ping
+  silencePingLogging: "true"
 
 api:
   replicaCount: 1
