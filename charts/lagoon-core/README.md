@@ -29,6 +29,8 @@ webhooks2tasks:
   enabled: false
 sshPortal:
   enabled: false
+oauth2proxy:
+  enabled: false
 ```
 
 ## TL;DR Local testing using kind
@@ -46,6 +48,7 @@ helm upgrade --install --create-namespace --namespace lagoon-core \
   --values ./charts/lagoon-core/ci/linter-values.yaml \
   --set lagoonAPIURL=http://localhost:7070/graphql \
   --set keycloakFrontEndURL=http://localhost:8080 \
+  --set oauth2proxyFrontEndURl=https://localhost:4180 \
   lagoon-core \
   ./charts/lagoon-core
 
@@ -55,6 +58,7 @@ kubectl port-forward svc/lagoon-core-keycloak 8080 &
 kubectl port-forward svc/lagoon-core-api 7070:80 &
 kubectl port-forward svc/lagoon-core-ui 6060:3000 &
 kubectl port-forward svc/lagoon-core-ssh 2020 &
+kubectl port-forward svc/lagoon-core-oauth2proxy 4180 &
 ```
 
 ### Use
