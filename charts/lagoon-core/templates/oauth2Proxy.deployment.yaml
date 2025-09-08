@@ -44,6 +44,8 @@ spec:
         env:
         - name: OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION
           value: {{ .Values.oauth2proxy.oidcSkipIssuerVerification | quote }}
+        - name: OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL
+          value: {{ .Values.oauth2proxy.oidcAllowUnverifiedEmail | quote }}
         - name: OAUTH2_PROXY_CLIENT_SECRET
           valueFrom:
             secretKeyRef:
@@ -82,6 +84,8 @@ spec:
           value: {{ .Values.oauth2proxy.cookieSecure | quote }}
         - name: OAUTH2_PROXY_COOKIE_DOMAINS
           value: {{ .Values.oauth2proxy.cookieDomains }}
+        - name: OAUTH2_PROXY_COOKIE_CSRF_PER_REQUEST
+          value: {{ .Values.oauth2proxy.cookieCsrfPerRequest | quote }}
         - name: OAUTH2_PROXY_WHITELIST_DOMAINS
           value: {{ .Values.oauth2proxy.whitelistDomains }}
         - name: OAUTH2_PROXY_SCOPE
