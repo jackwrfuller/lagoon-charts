@@ -30,19 +30,19 @@ oauth2proxy:
   ingress:
     enabled: true
   provider: oidc
-  oidcSkipIssuerVerification: "true"
+  oidcSkipIssuerVerification: true
   clientID: lagoon-oauth2proxy
   httpAddress: "0.0.0.0:4180"
   emailDomains: "*"
-  cookieSecure: "false"
+  cookieSecure: false
   cookieDomains: .nip.io 
   whitelistDomains: .nip.io
   scope: "openid email profile"
   codeChallengeMethod: S256
-  reverseProxy: "false"
+  reverseProxy: false
   caFile: /etc/ssl/certs/keycloak-ca.crt
   pingPath: /ping
-  silencePingLogging: "true"
+  silencePingLogging: true
 
 api:
   replicaCount: 1
