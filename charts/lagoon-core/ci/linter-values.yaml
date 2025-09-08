@@ -31,11 +31,13 @@ oauth2proxy:
     enabled: true
   provider: oidc
   oidcSkipIssuerVerification: true
+  oidcAllowUnverifiedEmail: true
   clientID: lagoon-oauth2proxy
   httpAddress: "0.0.0.0:4180"
   emailDomains: "*"
   cookieSecure: false
   cookieDomains: .nip.io 
+  cookieCsrfPerRequest: true
   whitelistDomains: .nip.io
   scope: "openid email profile"
   codeChallengeMethod: S256
