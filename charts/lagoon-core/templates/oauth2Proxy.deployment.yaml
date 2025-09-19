@@ -42,6 +42,8 @@ spec:
         image: "{{ .Values.oauth2proxy.image.repository }}:{{ coalesce .Values.oauth2proxy.image.tag .Values.imageTag "latest" }}"
         imagePullPolicy: {{ .Values.oauth2proxy.image.pullPolicy }}
         env:
+        - name: OAUTH2_PROXY_LAGOON_ENDPOINT
+          value: {{ .Values.lagoonAPIURL }}
         - name: OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION
           value: {{ .Values.oauth2proxy.oidcSkipIssuerVerification | quote }}
         - name: OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL
