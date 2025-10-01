@@ -251,7 +251,7 @@ spec:
         {{- end }}
         {{- end }}
         {{- with .Values.lagoonFeatureFlagOauth2proxyDomain }}
-        - name: LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN
+        - name: LAGOON_FEATURE_FLAG_DEFAULT_OAUTH2PROXY_DOMAIN
           value: {{ . | quote}}
         {{- end }}
         {{- with .Values.adminLagoonFeatureFlag.containerMemoryLimit }}
