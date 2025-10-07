@@ -26,6 +26,27 @@ sshTokenEndpoint: ssh-token.example.com
 
 keycloakAdminEmail: admin@example.com
 
+oauth2proxy:
+  replicaCount: 1
+  ingress:
+    enabled: true
+  provider: oidc
+  oidcSkipIssuerVerification: true
+  oidcAllowUnverifiedEmail: true
+  clientID: lagoon-oauth2proxy
+  httpAddress: "0.0.0.0:4180"
+  emailDomains: "*"
+  cookieSecure: false
+  cookieDomains: .nip.io 
+  cookieCsrfPerRequest: true
+  whitelistDomains: .nip.io
+  scope: "openid email profile"
+  codeChallengeMethod: S256
+  reverseProxy: false
+  caFile: /etc/ssl/certs/keycloak-ca.crt
+  pingPath: /ping
+  silencePingLogging: true
+
 api:
   replicaCount: 1
   image:

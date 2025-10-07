@@ -1,0 +1,138 @@
+{{- if .Values.oauth2proxy.enabled -}}
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
+  labels:
+    {{- include "lagoon-core.oauth2proxy.labels" . | nindent 4 }}
+spec:
+{{- if not .Values.oauth2proxy.autoscaling.enabled }}
+  replicas: {{ .Values.oauth2proxy.replicaCount }}
+{{- end }}
+  selector:
+    matchLabels:
+      {{- include "lagoon-core.oauth2proxy.selectorLabels" . | nindent 6 }}
+  template:
+    metadata:
+      annotations:
+    {{- with .Values.oauth2proxy.podAnnotations }}
+        {{- toYaml . | nindent 8 }}
+    {{- end }}
+      labels:
+        {{- include "lagoon-core.oauth2proxy.selectorLabels" . | nindent 8 }}
+    spec:
+      {{- with .Values.imagePullSecrets }}
+      imagePullSecrets:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      securityContext:
+        {{- toYaml (coalesce .Values.oauth2proxy.podSecurityContext .Values.podSecurityContext) | nindent 8 }}
+      volumes:
+      - name: keycloak-ca-volume
+        secret:
+          defaultMode: 420
+          items:
+          - key: ca.crt
+            path: ca.crt
+          secretName: keycloak-tls
+      containers:
+      - name: oauth2proxy
+        securityContext:
+          {{- toYaml .Values.oauth2proxy.securityContext | nindent 10 }}
+        image: "{{ .Values.oauth2proxy.image.repository }}:{{ coalesce .Values.oauth2proxy.image.tag .Values.imageTag "latest" }}"
+        imagePullPolicy: {{ .Values.oauth2proxy.image.pullPolicy }}
+        env:
+        - name: OAUTH2_PROXY_LAGOON_ENDPOINT
+          value: {{ .Values.lagoonAPIURL }}
+        - name: OAUTH2_PROXY_INSECURE_OIDC_SKIP_ISSUER_VERIFICATION
+          value: {{ .Values.oauth2proxy.oidcSkipIssuerVerification | quote }}
+        - name: OAUTH2_PROXY_INSECURE_OIDC_ALLOW_UNVERIFIED_EMAIL
+          value: {{ .Values.oauth2proxy.oidcAllowUnverifiedEmail | quote }}
+        - name: OAUTH2_PROXY_CLIENT_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.keycloak.fullname" . }}
+              key: KEYCLOAK_LAGOON_O2P_CLIENT_SECRET
+        - name: OAUTH2_PROXY_COOKIE_SECRET
+          valueFrom:
+            secretKeyRef:
+              name: {{ include "lagoon-core.oauth2proxy.fullname" . }}
+              key: OAUTH2_PROXY_COOKIE_SECRET
+        - name: OAUTH2_PROXY_PROVIDER
+          value: {{ .Values.oauth2proxy.provider }}
+        - name: OAUTH2_PROXY_CLIENT_ID 
+          value: {{ .Values.oauth2proxy.clientID }}
+        - name: OAUTH2_PROXY_REDIRECT_URL
+          {{- if .Values.oauth2proxyFrontEndURL }}
+          value: {{ .Values.oauth2proxyFrontEndURL }}
+          {{- else if .Values.oauth2proxy.ingress.enabled }}
+          value: https://{{ index .Values.oauth2proxy.ingress.hosts 0 "host" }}
+          {{- else }}
+          value: http://{{ include "lagoon-core.oauth2proxy.fullname" . }}:{{ .Values.oauth2proxy.service.port }}
+          {{- end }}
+        - name: OAUTH2_PROXY_HTTP_ADDRESS
+          value: {{ .Values.oauth2proxy.httpAddress }}
+        - name: OAUTH2_PROXY_OIDC_ISSUER_URL
+          {{- if .Values.keycloakFrontEndURL }}
+          value: {{ .Values.keycloakFrontEndURL }}/auth/realms/lagoon
+          {{- else if .Values.keycloak.ingress.enabled }}
+          value: https://{{ index .Values.keycloak.ingress.hosts 0 "host" }}/auth/realms/lagoon
+          {{- else }}
+          value: http://{{ include "lagoon-core.keycloak.fullname" . }}:{{ .Values.keycloak.service.port }}/auth/realms/lagoon
+          {{- end }}
+        - name: OAUTH2_PROXY_EMAIL_DOMAINS
+          value: {{ .Values.oauth2proxy.emailDomains | quote }}
+        - name: OAUTH2_PROXY_COOKIE_SECURE
+          value: {{ .Values.oauth2proxy.cookieSecure | quote }}
+        - name: OAUTH2_PROXY_COOKIE_DOMAINS
+          value: {{ .Values.oauth2proxy.cookieDomains }}
+        - name: OAUTH2_PROXY_COOKIE_CSRF_PER_REQUEST
+          value: {{ .Values.oauth2proxy.cookieCsrfPerRequest | quote }}
+        - name: OAUTH2_PROXY_WHITELIST_DOMAINS
+          value: {{ .Values.oauth2proxy.whitelistDomains }}
+        - name: OAUTH2_PROXY_SCOPE
+          value: {{ .Values.oauth2proxy.scope }}
+        - name: OAUTH2_PROXY_CODE_CHALLENGE_METHOD
+          value: {{ .Values.oauth2proxy.codeChallengeMethod }}
+        - name: OAUTH2_PROXY_REVERSE_PROXY
+          value: {{ .Values.oauth2proxy.reverseProxy | quote }}
+        - name: OAUTH2_PROXY_PROVIDER_CA_FILE
+          value: {{ .Values.oauth2proxy.caFile}}
+        - name: OAUTH2_PROXY_PING_PATH
+          value: {{ .Values.oauth2proxy.pingPath }}
+        - name: OAUTH2_PROXY_SILENCE_PING_LOGGING
+          value: {{ .Values.oauth2proxy.silencePingLogging | quote }}
+      {{- range $key, $val := .Values.oauth2proxy.additionalEnvs }}
+        - name: {{ $key }}
+          value: {{ $val | quote }}
+      {{- end }}
+        volumeMounts:
+          - name: keycloak-ca-volume
+            mountPath: {{ .Values.oauth2proxy.caFile}}
+            subPath: ca.crt
+            readOnly: true
+        ports:
+        - containerPort: 4180
+          name: http-4180
+          protocol: TCP
+        readinessProbe:
+          failureThreshold: 3
+          httpGet:
+            path: /ping
+            port: http-4180
+            scheme: HTTP
+        resources:
+        {{- toYaml .Values.oauth2proxy.resources | nindent 10 }}
+      {{- with .Values.oauth2proxy.nodeSelector }}
+      nodeSelector:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      affinity:
+      {{- with .Values.oauth2proxy.affinity }}
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+      {{- with .Values.oauth2proxy.tolerations }}
+      tolerations:
+        {{- toYaml . | nindent 8 }}
+      {{- end }}
+{{- end }}

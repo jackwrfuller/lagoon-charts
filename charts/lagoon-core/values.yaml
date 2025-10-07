@@ -118,6 +118,33 @@ imageTag: ""
 # blockDeveloperSSH: false
 
 # the following services are part of the lagoon-core chart
+oauth2proxy:
+  enabled: true
+  replicaCount: 2
+  image:
+    repository: uselagoon/oauth2-proxy
+    pullPolicy: Always
+    # Overrides the image tag whose default is "latest".
+    tag: ""
+  podAnnotations: {}
+  securityContext: {}
+  resources:
+    requests:
+      memory: "8Mi"
+      cpu: "10m"
+  additionalEnvs:
+  #   FOO: Bar
+  service:
+    type: ClusterIP
+    port: 4180
+  ingress:
+    enabled: true
+  autoscaling:
+    enabled: false
+    minReplicas: 1
+    maxReplicas: 100
+    targetCPUUtilizationPercentage: 80
+    # targetMemoryUtilizationPercentage: 80
 
 api:
   replicaCount: 2
