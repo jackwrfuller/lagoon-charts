@@ -188,6 +188,10 @@ spec:
         {{- end }}
         - name: LAGOON_TARGET_NAME
           value: {{ required "A valid .Values.lagoonTargetName required!" .Values.lagoonTargetName | quote }}
+        {{- with .Values.keycloakFrontendURL }}
+        - name: LAGOON_KEYCLOAK_FRONTEND_URL
+          value: {{ . | quote }}
+        {{- end }}
         {{- with .Values.overrideBuildDeployImage }}
         - name: OVERRIDE_BUILD_DEPLOY_DIND_IMAGE
           value: {{ . | quote }}

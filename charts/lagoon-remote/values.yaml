@@ -196,6 +196,7 @@ lagoon-build-deploy:
   # lagoonAPIHost: ""
   # sshPortalHost: ""
   # sshPortalPort: ""
+  # keycloakFrontendURL: ""
   # See the parent chart for the full range of values that can be passed here to control builds
   # https://github.com/uselagoon/lagoon-charts/blob/main/charts/lagoon-build-deploy/values.yaml
 

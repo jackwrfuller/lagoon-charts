@@ -5,6 +5,7 @@ lagoonTargetName: ""
 rabbitMQHostname: ""
 rabbitMQPassword: ""
 rabbitMQUsername: ""
+keycloakFrontendURL: ""
 
 # This is here due to the removal of the passthrough from core https://github.com/uselagoon/lagoon/pull/3659
 # if you leveraged this value in your core, you should ensure you update your remotes with this value to reflect what you previously had provided in core
