@@ -796,7 +796,7 @@ endif
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO) ] && echo '--set lagoonFeatureFlagDefaultRWX2RWO=$(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO)') \
 		$$([ $(ENABLE_INSIGHTS) = true ] && echo '--set lagoonFeatureFlagDefaultInsights=enabled') \
 		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo '--set lagoonFeatureFlagOauth2proxyDomain=$(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN)') \
-		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo '--set keycloakFrontendURL='$$([ "$(LAGOON_CORE_USE_HTTPS)" = true ] && echo "https" || echo "http")://lagoon-keycloak.$$($(KUBECTL) -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io') \
+		$$([ "http://lagoon-oauth2proxy.172.19.0.240.nip.io" ] && echo "--set keycloakFrontendURL=$$([ \"true\" = true ] && echo https || echo http)://lagoon-keycloak.$$($(KUBECTL) -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
 		lagoon-build-deploy \
 		$$(if [ $(INSTALL_STABLE_BUILDDEPLOY) = true ]; then echo 'lagoon/lagoon-build-deploy'; else echo './charts/lagoon-build-deploy'; fi)
 ifeq ($(INSTALL_STABLE_BUILDDEPLOY),true)
