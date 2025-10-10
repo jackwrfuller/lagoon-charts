@@ -796,9 +796,9 @@ endif
 		$$([ $(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO) ] && echo '--set lagoonFeatureFlagDefaultRWX2RWO=$(LAGOON_FEATURE_FLAG_DEFAULT_RWX_TO_RWO)') \
 		$$([ $(ENABLE_INSIGHTS) = true ] && echo '--set lagoonFeatureFlagDefaultInsights=enabled') \
 		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo '--set lagoonFeatureFlagOauth2proxyDomain=$(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN)') \
-		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo "--set keycloakFrontendURL=$$([ \"true\" = true ] && echo https || echo http)://lagoon-keycloak.$$($(KUBECTL) -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
-		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo "--set keycloakOauth2proxyClientSecret=$$($(KUBECTL) -n lagoon-core get secret lagoon-core-keycloak -o json | $(JQ) -r '.data.KEYCLOAK_LAGOON_O2P_CLIENT_SECRET | @base64d') \
-		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo "--set keycloakOauth2proxyCookieSecret=$$($(KUBECTL) -n lagoon-core get secret lagoon-core-oauth2proxy -o json | $(JQ) -r '.data.OAUTH2_PROXY_COOKIE_SECRET | @base64d') \
+		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo "--set keycloakFrontendURL=$$(http://lagoon-keycloak.$$($(KUBECTL) -n ingress-nginx get svc ingress-nginx-controller -o jsonpath='{.status.loadBalancer.ingress[0].ip}').nip.io") \
+		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo "--set keycloakOauth2proxyClientSecret=$$($(KUBECTL) -n lagoon-core get secret lagoon-core-keycloak -o json | $(JQ) -r '.data.KEYCLOAK_LAGOON_O2P_CLIENT_SECRET | @base64d')" \
+		$$([ $(LAGOON_FEATURE_FLAG_OAUTH2PROXY_DOMAIN) ] && echo "--set keycloakOauth2proxyCookieSecret=$$($(KUBECTL) -n lagoon-core get secret lagoon-core-oauth2proxy -o json | $(JQ) -r '.data.OAUTH2_PROXY_COOKIE_SECRET | @base64d')" \
 		lagoon-build-deploy \
 		$$(if [ $(INSTALL_STABLE_BUILDDEPLOY) = true ]; then echo 'lagoon/lagoon-build-deploy'; else echo './charts/lagoon-build-deploy'; fi)
 ifeq ($(INSTALL_STABLE_BUILDDEPLOY),true)
