@@ -188,10 +188,6 @@ spec:
         {{- end }}
         - name: LAGOON_TARGET_NAME
           value: {{ required "A valid .Values.lagoonTargetName required!" .Values.lagoonTargetName | quote }}
-        {{- with .Values.keycloakFrontendURL }}
-        - name: LAGOON_FEATURE_FLAG_DEFAULT_KEYCLOAK_FRONTEND_URL
-          value: {{ . | quote }}
-        {{- end }}
         {{- with .Values.overrideBuildDeployImage }}
         - name: OVERRIDE_BUILD_DEPLOY_DIND_IMAGE
           value: {{ . | quote }}
@@ -254,9 +250,21 @@ spec:
           value: {{ . | quote }}
         {{- end }}
         {{- end }}
-        {{- with .Values.lagoonFeatureFlagOauth2proxyDomain }}
+        {{- if .Values.lagoonFeatureFlagOauth2proxyDomain }}
         - name: LAGOON_FEATURE_FLAG_DEFAULT_OAUTH2PROXY_DOMAIN
-          value: {{ . | quote}}
+          value: {{ .Values.lagoonFeatureFlagOauth2proxyDomain | quote }}
+        {{- if .Values.keycloakFrontendURL }}
+        - name: LAGOON_FEATURE_FLAG_DEFAULT_KEYCLOAK_FRONTEND_URL
+          value: {{ .Values.keycloakFrontendURL | quote }}
+        {{- end }}
+        {{- if .Values.keycloakOauth2proxyClientSecret }}
+        - name: LAGOON_FEATURE_FLAG_DEFAULT_KEYCLOAK_OAUTH2PROXY_CLIENT_SECRET
+          value: {{ .Values.keycloakOauth2proxyClientSecret | quote }}
+        {{- end }}
+        {{- if .Values.keycloakOauth2proxyCookieSecret }}
+        - name: LAGOON_FEATURE_FLAG_DEFAULT_KEYCLOAK_OAUTH2PROXY_COOKIE_SECRET
+          value: {{ .Values.keycloakOauth2proxyCookieSecret | quote }}
+        {{- end }}
         {{- end }}
         {{- with .Values.adminLagoonFeatureFlag.containerMemoryLimit }}
         - name: ADMIN_LAGOON_FEATURE_FLAG_CONTAINER_MEMORY_LIMIT
